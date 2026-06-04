@@ -7,9 +7,9 @@ AI Web Chatbot adalah aplikasi chatbot berbasis web yang memungkinkan pengguna m
 | Keterangan | Detail |
 |---|---|
 | Nama Kelompok | SEBELAS |
-| Nama Proyek | AI Web Chatbot |
+| Nama Proyek | AI Chatbot |
 | Jumlah Anggota | 3 orang |
-| Repositori | https://github.com/ |
+| Repositori | https://github.com/wildanmukhall/AI-ChatBot |
 | Frontend | Blade |
 | Backend | Laravel |
 | Database | MySQL |
