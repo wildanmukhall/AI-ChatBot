@@ -35,4 +35,52 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Gemini API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi untuk Google Gemini API.
+    | Digunakan untuk generate teks (chatbot).
+    |
+    */
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cloudflare Workers AI Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi untuk Cloudflare Workers AI API.
+    | Digunakan untuk generate gambar.
+    |
+    */
+
+    'cloudflare' => [
+        'api_token' => env('CLOUDFLARE_API_TOKEN'),
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'image_endpoint' => env('CLOUDFLARE_IMAGE_ENDPOINT'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Midtrans Payment Gateway Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi untuk Midtrans Payment Gateway.
+    | Digunakan untuk proses pembayaran pricing plan.
+    |
+    */
+
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
+    ],
+
 ];
