@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\HealthCheckController;
+use App\Http\Controllers\Api\ChatSessionController;
+use App\Http\Controllers\Api\ChatMessageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +16,14 @@ use App\Http\Controllers\Api\HealthCheckController;
 | Struktur endpoint:
 |   GET /api/v1/health  → Health check
 |   GET /api/v1/status  → API version status
+|
+| Chat endpoints (authenticated):
+|   POST   /api/v1/chat-sessions              → Buat chat session
+|   GET    /api/v1/chat-sessions              → Daftar chat session
+|   GET    /api/v1/chat-sessions/{id}         → Detail chat session
+|   DELETE /api/v1/chat-sessions/{id}         → Hapus chat session
+|   GET    /api/v1/chat-sessions/{id}/messages → Daftar pesan
+|   POST   /api/v1/chat-sessions/{id}/messages → Kirim pesan + generate AI
 |
 */
 
@@ -34,27 +44,22 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
 
     /*
     |----------------------------------------------------------------------
-    | Authenticated Endpoints (memerlukan autentikasi)
-    | Akan ditambahkan pada modul berikutnya
+    | Authenticated Endpoints (memerlukan autentikasi Sanctum)
     |----------------------------------------------------------------------
     */
 
-    // Route::middleware(['auth:sanctum'])->group(function () {
-    //     // Chat routes
-    //     // Image generation routes
-    //     // Payment routes
-    //     // User routes
-    // });
+    Route::middleware(['auth:sanctum'])->group(function () {
 
-    /*
-    |----------------------------------------------------------------------
-    | AI Generate Endpoints (rate limit khusus)
-    | Akan ditambahkan pada modul berikutnya
-    |----------------------------------------------------------------------
-    */
+        // Chat Session CRUD
+        Route::apiResource('chat-sessions', ChatSessionController::class)
+            ->only(['index', 'store', 'show', 'destroy']);
 
-    // Route::middleware(['auth:sanctum', 'throttle:ai-generate'])->group(function () {
-    //     // AI text generation
-    //     // AI image generation
-    // });
+        // Chat Messages (nested under chat-sessions)
+        Route::get('chat-sessions/{chatSession}/messages', [ChatMessageController::class, 'index'])
+            ->name('chat-sessions.messages.index');
+
+        Route::post('chat-sessions/{chatSession}/messages', [ChatMessageController::class, 'store'])
+            ->name('chat-sessions.messages.store')
+            ->middleware('throttle:ai-generate');
+    });
 });

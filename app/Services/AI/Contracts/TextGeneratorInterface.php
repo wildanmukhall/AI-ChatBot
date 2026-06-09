@@ -17,7 +17,7 @@ interface TextGeneratorInterface
      *
      * @param string $prompt Prompt dari user
      * @param array $options Opsi tambahan (model, temperature, dll)
-     * @return array Hasil generate teks
+     * @return string Teks hasil generate AI
      */
-    public function generateText(string $prompt, array $options = []): array;
+    public function generateText(string $prompt, array $options = []): string;
 }

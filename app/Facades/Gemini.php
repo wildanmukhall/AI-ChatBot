@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Facade;
  * Contoh penggunaan:
  *   Gemini::generateText('Jelaskan tentang AI')
  *
- * @method static array generateText(string $prompt, array $options = [])
+ * @method static string generateText(string $prompt, array $options = [])
  *
  * @see \App\Services\AI\GeminiService
  */

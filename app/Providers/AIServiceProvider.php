@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Services\AI\GeminiService;
 use App\Services\AI\CloudflareImageService;
+use App\Services\Chat\ChatService;
 use App\Services\AI\Contracts\TextGeneratorInterface;
 use App\Services\AI\Contracts\ImageGeneratorInterface;
 
@@ -15,6 +16,7 @@ use App\Services\AI\Contracts\ImageGeneratorInterface;
  * Service yang didaftarkan:
  * - GeminiService (singleton, key: 'gemini')
  * - CloudflareImageService (singleton, key: 'cloudflare-ai')
+ * - ChatService (singleton)
  *
  * Provider ini juga mengikat interface ke implementasi konkret
  * agar bisa digunakan melalui dependency injection.
@@ -34,6 +36,11 @@ class AIServiceProvider extends ServiceProvider
         // Daftarkan CloudflareImageService sebagai singleton
         $this->app->singleton('cloudflare-ai', function () {
             return new CloudflareImageService();
+        });
+
+        // Daftarkan ChatService sebagai singleton
+        $this->app->singleton(ChatService::class, function ($app) {
+            return new ChatService($app->make('gemini'));
         });
 
         // Bind interface ke implementasi

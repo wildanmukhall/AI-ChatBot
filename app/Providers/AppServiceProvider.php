@@ -50,9 +50,9 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // Rate limit khusus untuk AI generate (lebih ketat)
+        // Rate limit khusus untuk AI generate (ketat per PRD: 20/menit)
         RateLimiter::for('ai-generate', function (Request $request) {
-            return Limit::perMinute(10)->by(
+            return Limit::perMinute(20)->by(
                 $request->user()?->id ?: $request->ip()
             );
         });
