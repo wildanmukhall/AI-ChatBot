@@ -1,457 +1,978 @@
-# AI Web Chatbot
+# AI ChatBot — Dokumentasi Penggunaan
 
-AI Web Chatbot adalah aplikasi chatbot berbasis web yang memungkinkan pengguna mengirim pertanyaan melalui antarmuka web dan menerima balasan dari layanan AI secara real time. Sistem ini mendukung dua jenis layanan AI, yaitu generate teks menggunakan Gemini API dan generate gambar text-to-image menggunakan model AI yang dijalankan melalui Cloudflare Worker. Sistem ini dibangun menggunakan Laravel sebagai backend, Blade sebagai antarmuka frontend, MySQL sebagai database, serta Railway sebagai platform deployment.
+Aplikasi AI Chatbot berbasis web yang memungkinkan pengguna melakukan percakapan dengan AI menggunakan **Gemini API**. Backend dibangun dengan **Laravel 12**, frontend dengan **React**, dan autentikasi menggunakan **Laravel Sanctum**.
+
+---
+
+## Daftar Isi
+
+- [Identitas Proyek](#identitas-proyek)
+- [Arsitektur Sistem](#arsitektur-sistem)
+- [Kebutuhan Sistem](#kebutuhan-sistem)
+- [Instalasi & Setup](#instalasi--setup)
+- [Konfigurasi Environment](#konfigurasi-environment)
+- [Menjalankan Aplikasi](#menjalankan-aplikasi)
+- [Struktur Proyek](#struktur-proyek)
+- [Panduan API](#panduan-api)
+  - [Autentikasi](#1-autentikasi)
+  - [Health Check](#2-health-check)
+  - [Chat Session](#3-chat-session)
+  - [Chat Message](#4-chat-message)
+- [Panduan Integrasi Frontend (React)](#panduan-integrasi-frontend-react)
+- [Error Handling](#error-handling)
+- [Rate Limiting](#rate-limiting)
+- [Perintah Penting](#perintah-penting)
+- [Troubleshooting](#troubleshooting)
+
+---
 
 ## Identitas Proyek
 
-| Keterangan | Detail |
-|---|---|
-| Nama Kelompok | SEBELAS |
-| Nama Proyek | AI Chatbot |
-| Jumlah Anggota | 3 orang |
-| Repositori | https://github.com/wildanmukhall/AI-ChatBot |
-| Frontend | Blade |
-| Backend | Laravel |
-| Database | MySQL |
-| Deployment | Railway |
+| Keterangan     | Detail                                          |
+| -------------- | ----------------------------------------------- |
+| Nama Kelompok  | SEBELAS                                         |
+| Nama Proyek    | AI Chatbot                                      |
+| Repositori     | https://github.com/wildanmukhall/AI-ChatBot     |
+| Frontend       | React                                           |
+| Backend        | Laravel 12                                      |
+| Database       | MySQL                                           |
+| Auth           | Laravel Sanctum (Bearer Token)                  |
+| AI Provider    | Google Gemini API                                |
 
-## Anggota Tim
+### Anggota Tim
 
-| Nama | NIM | Role | Teknologi |
-|---|---:|---|---|
-| Dandy Sultana Putra Ali | 230705199 | Backend Developer | Laravel, MySQL, API |
-| Syibran Malawi | 230705062 | Frontend Developer | Blade, Tailwind CSS, Vite |
-| M. Wildan Mukhalladun | 230705059 | DevOps Engineer | Railway, GitHub, Deployment Automation |
+| Nama                      |      NIM | Role               |
+| ------------------------- | -------: | ------------------ |
+| Dandy Sultana Putra Ali   | 230705199 | Backend Developer  |
+| Syibran Malawi            | 230705062 | Frontend Developer |
+| M. Wildan Mukhalladun     | 230705059 | DevOps Engineer    |
 
-## Deskripsi Sistem
+---
 
-AI Web Chatbot terdiri dari antarmuka pengguna dan layanan backend. Pengguna mengirim pesan melalui halaman chatbot, kemudian frontend meneruskan pesan tersebut ke backend Laravel. Backend memproses request, menghubungkan sistem dengan layanan AI eksternal sesuai jenis permintaan, menyimpan riwayat percakapan ke database, lalu mengirimkan kembali respons AI ke frontend. Untuk permintaan generate teks, sistem menggunakan Gemini API. Untuk permintaan generate gambar berbasis text-to-image, sistem memanfaatkan model AI yang tersedia melalui Cloudflare Worker.
+## Arsitektur Sistem
 
-Secara umum, alur sistem adalah sebagai berikut:
-
-```text
-User
-  ↓
-Frontend Blade
-  ↓
-Backend API Laravel
-  ↓
-Layanan AI Eksternal
-  ├── Gemini API untuk generate teks
-  └── Cloudflare Worker AI untuk generate gambar text-to-image
-  ↓
-Backend API Laravel
-  ↓
-Frontend Blade
-  ↓
-User
+```
+User → React Frontend → Laravel API → Gemini API
+                ↕               ↕
+           State Mgmt      MySQL Database
 ```
 
-## Arsitektur Aplikasi
+### Alur Request Chat
 
-### 1. Frontend
-
-Frontend digunakan sebagai antarmuka utama bagi pengguna untuk berinteraksi dengan chatbot.
-
-**Nama aplikasi:** AI Web Chatbot
-
-**Fungsi utama:**
-
-- Menampilkan halaman chatbot.
-- Menerima input pesan dari pengguna.
-- Mengirim pesan pengguna ke backend.
-- Menampilkan respons chatbot dari backend.
-- Memberikan pengalaman penggunaan yang sederhana dan responsif.
-
-**Teknologi yang digunakan:**
-
-- Blade
-- Tailwind CSS
-- Vite
-
-### 2. Backend
-
-Backend digunakan untuk menangani logika utama aplikasi, termasuk pengelolaan request chatbot, integrasi dengan layanan AI, serta penyimpanan riwayat percakapan.
-
-**Nama service:** API Chatbot Laravel
-
-**Fungsi utama:**
-
-- Menyediakan endpoint untuk pengiriman pesan chatbot.
-- Memvalidasi input dari pengguna.
-- Mengirim permintaan generate teks ke Gemini API.
-- Mengirim permintaan generate gambar text-to-image ke model AI melalui Cloudflare Worker.
-- Mengolah respons dari layanan AI.
-- Menyimpan riwayat percakapan ke database.
-- Mengirimkan respons kembali ke frontend.
-
-**Teknologi yang digunakan:**
-
-- Laravel
-- MySQL
-- REST API
-
-### 3. Integrasi Layanan AI
-
-Integrasi layanan AI digunakan untuk memproses permintaan pengguna berdasarkan jenis fitur yang digunakan. Sistem membedakan layanan AI menjadi dua bagian utama, yaitu layanan generate teks dan layanan generate gambar.
-
-**Generate teks:**
-
-- Menggunakan Gemini API.
-- Digunakan untuk memproses pesan pengguna dan menghasilkan jawaban chatbot berbasis teks.
-- Backend Laravel mengirim prompt pengguna ke Gemini API, kemudian menerima respons teks untuk ditampilkan kembali pada frontend.
-
-**Generate gambar text-to-image:**
-
-- Menggunakan model AI yang tersedia melalui Cloudflare Worker.
-- Digunakan untuk menghasilkan gambar berdasarkan prompt teks yang diberikan pengguna.
-- Backend Laravel mengirim prompt gambar ke endpoint Cloudflare Worker, kemudian menerima hasil gambar atau URL gambar untuk ditampilkan pada frontend.
-
-### 4. Database
-
-Database digunakan untuk menyimpan data yang dibutuhkan oleh aplikasi.
-
-**Database:** MySQL
-
-**Contoh data yang dapat disimpan:**
-
-- Data pengguna, jika sistem memiliki fitur login.
-- Riwayat pesan pengguna.
-- Respons chatbot.
-- Waktu percakapan.
-- Status request atau metadata percakapan.
-
-### 5. Deployment dan Infrastruktur
-
-Deployment aplikasi dilakukan menggunakan Railway. Railway digunakan untuk menjalankan aplikasi Laravel, mengelola environment variable, serta menghubungkan aplikasi dengan database.
-
-**Teknologi yang digunakan:**
-
-- Railway
-- GitHub
-- Deployment Automation
-
-## Fitur Utama Sistem
-
-Berikut fitur utama yang dirancang pada sistem AI Web Chatbot:
-
-### 1. Generate Teks
-
-Fitur generate teks digunakan untuk memproses prompt atau pertanyaan yang dikirimkan oleh pengguna. Sistem akan meneruskan prompt dari frontend ke backend Laravel, kemudian backend mengirimkan request ke Gemini API. Respons dari Gemini API akan dikembalikan ke frontend dan ditampilkan sebagai jawaban chatbot berbasis teks.
-
-### 2. Generate Gambar
-
-Fitur generate gambar digunakan untuk menghasilkan gambar berdasarkan prompt teks yang dimasukkan oleh pengguna. Backend Laravel akan mengirimkan prompt gambar ke endpoint Cloudflare Worker yang memanfaatkan model text-to-image. Hasil generate dapat ditampilkan pada halaman aplikasi dalam bentuk gambar atau URL gambar.
-
-### 3. Pricing Plan Generate Gambar
-
-Fitur pricing plan digunakan untuk mengatur batasan dan paket penggunaan fitur generate gambar. Sistem dapat menyediakan beberapa pilihan paket, misalnya paket gratis dengan jumlah generate terbatas dan paket berbayar dengan kuota generate gambar yang lebih besar. Fitur ini membantu membatasi penggunaan resource AI sekaligus menjadi dasar monetisasi layanan.
-
-### 4. Autentikasi Pengguna
-
-Fitur autentikasi digunakan untuk mengelola akses pengguna ke dalam sistem. Pengguna dapat melakukan registrasi, login, dan logout. Dengan adanya autentikasi, sistem dapat menyimpan riwayat generate teks, hasil generate gambar, serta penggunaan kuota berdasarkan akun masing-masing pengguna.
-
-### 5. Galeri Hasil Generate Gambar
-
-Fitur galeri digunakan untuk menampilkan kembali hasil gambar yang pernah dibuat oleh pengguna. Setiap gambar hasil generate dapat disimpan ke database beserta informasi prompt, waktu pembuatan, dan pemilik akun. Dengan fitur ini, pengguna dapat melihat, mengelola, atau menggunakan kembali hasil gambar tanpa harus melakukan generate ulang.
-
-## Struktur Direktori Laravel
-
-Berikut contoh struktur direktori utama yang digunakan dalam proyek Laravel:
-
-```text
-ai-web-chatbot/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   └── Requests/
-│   └── Models/
-├── bootstrap/
-├── config/
-├── database/
-│   ├── migrations/
-│   └── seeders/
-├── public/
-├── resources/
-│   ├── css/
-│   ├── js/
-│   └── views/
-├── routes/
-│   ├── web.php
-│   └── api.php
-├── storage/
-├── tests/
-├── .env.example
-├── composer.json
-├── package.json
-└── README.md
 ```
+1. User mengetik pesan di React
+2. React mengirim POST ke /api/v1/chat-sessions/{id}/messages
+3. Laravel memvalidasi request (StoreChatMessageRequest)
+4. ChatService menyimpan pesan user ke database
+5. ChatService memanggil GeminiService.generateText()
+6. GeminiService mengirim request ke Gemini API
+7. Jawaban AI disimpan ke database
+8. Laravel mengembalikan response JSON ke React
+9. React menampilkan jawaban AI
+```
+
+### Arsitektur Backend (Service-Oriented)
+
+```
+Controller (tipis, hanya delegasi)
+    ↓
+Form Request (validasi input)
+    ↓
+ChatService (logika bisnis)
+    ↓
+GeminiService (komunikasi API)
+    ↓
+Gemini API (Google AI)
+```
+
+---
 
 ## Kebutuhan Sistem
 
-Sebelum menjalankan proyek, pastikan perangkat sudah memiliki:
+- **PHP** ≥ 8.2
+- **Composer** ≥ 2.x
+- **Node.js** ≥ 18.x & **npm**
+- **MySQL** ≥ 8.0
+- **Git**
+- **Gemini API Key** (dari [Google AI Studio](https://aistudio.google.com/apikey))
 
-- PHP versi 8.2 atau lebih baru.
-- Composer.
-- Node.js dan npm.
-- MySQL.
-- Git.
-- Akun Railway untuk deployment.
+---
 
-## Instalasi Lokal
-
-Ikuti langkah berikut untuk menjalankan proyek secara lokal.
+## Instalasi & Setup
 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/username/ai-web-chatbot.git
-cd ai-web-chatbot
+git clone https://github.com/wildanmukhall/AI-ChatBot.git
+cd AI-ChatBot
 ```
 
-### 2. Install Dependency Laravel
+### 2. Install Dependencies
 
 ```bash
 composer install
-```
-
-### 3. Install Dependency Frontend
-
-```bash
 npm install
 ```
 
-### 4. Salin File Environment
+### 3. Salin File Environment
 
 ```bash
+# Linux / macOS
 cp .env.example .env
-```
 
-Untuk pengguna Windows, dapat menggunakan:
-
-```bash
+# Windows
 copy .env.example .env
 ```
 
-### 5. Generate Application Key
+### 4. Generate Application Key
 
 ```bash
 php artisan key:generate
 ```
 
-### 6. Konfigurasi Database
+### 5. Buat Database MySQL
 
-Sesuaikan konfigurasi database pada file `.env`.
+```sql
+CREATE DATABASE ai_chatbot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### 6. Jalankan Migrasi
+
+```bash
+php artisan migrate
+```
+
+### 7. (Opsional) Setup Cepat dengan Composer Script
+
+```bash
+composer setup
+```
+
+Script ini otomatis menjalankan: install dependency, copy `.env`, generate key, migrasi, dan build frontend.
+
+---
+
+## Konfigurasi Environment
+
+Edit file `.env` sesuai kebutuhan:
+
+### Database
 
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=ai_web_chatbot
+DB_DATABASE=ai_chatbot
 DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-### 7. Konfigurasi API AI
-
-Tambahkan konfigurasi API layanan AI pada file `.env`. Gemini API digunakan untuk generate teks, sedangkan Cloudflare Worker digunakan untuk generate gambar text-to-image.
+### Gemini API (WAJIB)
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_API_URL=https://generativelanguage.googleapis.com
-CLOUDFLARE_WORKER_AI_URL=https://your-worker-name.your-subdomain.workers.dev
-CLOUDFLARE_WORKER_AI_TOKEN=your_cloudflare_worker_token
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_TIMEOUT=30
 ```
 
-### 8. Jalankan Migrasi Database
+> **Cara mendapatkan API Key:**
+> 1. Buka [Google AI Studio](https://aistudio.google.com/apikey)
+> 2. Login dengan akun Google
+> 3. Klik **"Create API Key"**
+> 4. Copy API key dan paste ke `GEMINI_API_KEY`
+
+### Frontend URL (CORS)
+
+```env
+FRONTEND_URL=http://localhost:5173
+```
+
+### Konfigurasi Lanjutan (Opsional)
+
+```env
+# Cloudflare Workers AI (untuk generate gambar — Phase selanjutnya)
+CLOUDFLARE_API_TOKEN=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_IMAGE_ENDPOINT=
+
+# Midtrans Payment (untuk pricing plan — Phase selanjutnya)
+MIDTRANS_SERVER_KEY=
+MIDTRANS_CLIENT_KEY=
+MIDTRANS_IS_PRODUCTION=false
+```
+
+### Tabel Environment Variable
+
+| Variable           | Wajib | Default                                                  | Deskripsi                       |
+| ------------------ | :---: | -------------------------------------------------------- | ------------------------------- |
+| `GEMINI_API_KEY`   |  ✅   | —                                                        | API key Google Gemini           |
+| `GEMINI_BASE_URL`  |  ❌   | `https://generativelanguage.googleapis.com/v1beta`       | Base URL Gemini API             |
+| `GEMINI_MODEL`     |  ❌   | `gemini-1.5-flash`                                       | Model AI yang digunakan         |
+| `GEMINI_TIMEOUT`   |  ❌   | `30`                                                     | Timeout request (detik)         |
+| `FRONTEND_URL`     |  ✅   | `http://localhost:5173`                                  | URL frontend untuk CORS         |
+| `DB_DATABASE`      |  ✅   | `ai_chatbot`                                             | Nama database MySQL             |
+
+---
+
+## Menjalankan Aplikasi
+
+### Opsi 1: Jalankan Semua Sekaligus (Direkomendasikan)
 
 ```bash
-php artisan migrate
+composer dev
 ```
 
-### 9. Jalankan Server Laravel
+Perintah ini menjalankan secara bersamaan:
+- Laravel server (`http://localhost:8000`)
+- Queue listener
+- Log viewer (Pail)
+- Vite dev server (`http://localhost:5173`)
 
+### Opsi 2: Jalankan Manual Satu Per Satu
+
+**Terminal 1 — Laravel Backend:**
 ```bash
 php artisan serve
 ```
 
-### 10. Jalankan Vite
-
+**Terminal 2 — Vite Frontend:**
 ```bash
 npm run dev
 ```
 
-Aplikasi dapat diakses melalui:
-
-```text
-http://127.0.0.1:8000
+**Terminal 3 — Queue Worker (opsional):**
+```bash
+php artisan queue:listen
 ```
 
-## Contoh Endpoint API
+### Verifikasi Backend Berjalan
 
-Berikut contoh rancangan endpoint yang dapat digunakan pada backend Laravel.
-
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/` | Menampilkan halaman chatbot |
-| POST | `/api/chat` | Mengirim pesan pengguna ke chatbot berbasis Gemini API |
-| POST | `/api/generate-image` | Mengirim prompt teks untuk menghasilkan gambar melalui Cloudflare Worker AI |
-| GET | `/api/chat/history` | Mengambil riwayat percakapan |
-
-### Contoh Request Chat
-
-```http
-POST /api/chat
-Content-Type: application/json
+```bash
+curl http://localhost:8000/api/v1/health
 ```
 
+Response yang diharapkan:
 ```json
 {
-  "message": "Apa itu Laravel?"
+  "success": true,
+  "message": "Backend API berjalan dengan baik.",
+  "data": {
+    "app": "AI Chatbot API",
+    "status": "ok",
+    "environment": "local",
+    "timestamp": "2026-06-10T10:00:00+00:00"
+  }
 }
 ```
 
-### Contoh Response Chat
+---
+
+## Struktur Proyek
+
+```
+AI-ChatBot/
+├── app/
+│   ├── Exceptions/
+│   │   ├── BusinessRuleException.php      # Exception aturan bisnis
+│   │   └── ExternalApiException.php       # Exception API eksternal (Gemini)
+│   ├── Facades/
+│   │   └── Gemini.php                     # Facade untuk GeminiService
+│   ├── Http/
+│   │   ├── Controllers/Api/
+│   │   │   ├── ChatSessionController.php  # CRUD chat session
+│   │   │   ├── ChatMessageController.php  # Kirim/ambil pesan
+│   │   │   └── HealthCheckController.php  # Health check endpoint
+│   │   └── Requests/Chat/
+│   │       ├── StoreChatSessionRequest.php # Validasi buat session
+│   │       └── StoreChatMessageRequest.php # Validasi kirim pesan
+│   ├── Models/
+│   │   ├── User.php                       # Model user + relasi chatSessions
+│   │   ├── ChatSession.php                # Model sesi percakapan
+│   │   └── ChatMessage.php                # Model pesan chat
+│   ├── Providers/
+│   │   ├── AIServiceProvider.php          # Register GeminiService, ChatService
+│   │   └── AppServiceProvider.php         # Rate limiting config
+│   ├── Services/
+│   │   ├── AI/
+│   │   │   ├── Contracts/
+│   │   │   │   └── TextGeneratorInterface.php  # Interface contract
+│   │   │   └── GeminiService.php          # Komunikasi dengan Gemini API
+│   │   ├── Chat/
+│   │   │   └── ChatService.php            # Logika bisnis chat
+│   │   └── Shared/
+│   │       └── ExternalApiService.php     # Base class HTTP client
+│   └── Support/
+│       └── ApiResponse.php                # Helper response JSON standar
+├── config/
+│   ├── cors.php                           # Konfigurasi CORS
+│   ├── sanctum.php                        # Konfigurasi Sanctum auth
+│   └── services.php                       # Config Gemini, Cloudflare, Midtrans
+├── database/migrations/
+│   ├── 2026_06_10_000001_create_chat_sessions_table.php
+│   └── 2026_06_10_000002_create_chat_messages_table.php
+├── routes/
+│   └── api.php                            # Semua route API
+├── PRD/
+│   └── AI_text.md                         # Product Requirement Document
+└── .env.example                           # Template environment variable
+```
+
+---
+
+## Panduan API
+
+Semua endpoint menggunakan prefix `/api/v1`. Response menggunakan format JSON standar.
+
+### Format Response Sukses
 
 ```json
 {
   "success": true,
-  "message": "Laravel adalah framework PHP yang digunakan untuk membangun aplikasi web secara cepat, rapi, dan terstruktur."
+  "message": "Deskripsi hasil.",
+  "data": { }
 }
 ```
 
-### Contoh Request Generate Gambar
-
-```http
-POST /api/generate-image
-Content-Type: application/json
-```
+### Format Response Error
 
 ```json
 {
-  "prompt": "Gambar robot kecil sedang membantu pengguna di depan laptop"
+  "success": false,
+  "message": "Deskripsi error.",
+  "errors": null
 }
 ```
 
-### Contoh Response Generate Gambar
+---
 
+### 1. Autentikasi
+
+Semua endpoint chat memerlukan **Bearer Token** dari Laravel Sanctum.
+
+#### Registrasi User (jika tersedia)
+
+```http
+POST /api/v1/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+```
+
+#### Login & Dapatkan Token
+
+```http
+POST /api/v1/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+Response:
 ```json
 {
   "success": true,
-  "image_url": "https://example.com/generated-image.png"
+  "message": "Login berhasil.",
+  "data": {
+    "token": "1|abc123xyz..."
+  }
 }
 ```
 
-## Environment Variable
+#### Menggunakan Token
 
-| Variable | Deskripsi |
-|---|---|
-| `APP_NAME` | Nama aplikasi Laravel |
-| `APP_ENV` | Mode aplikasi, seperti local atau production |
-| `APP_KEY` | Key keamanan aplikasi Laravel |
-| `APP_URL` | URL aplikasi |
-| `DB_CONNECTION` | Jenis database |
-| `DB_HOST` | Host database |
-| `DB_PORT` | Port database |
-| `DB_DATABASE` | Nama database |
-| `DB_USERNAME` | Username database |
-| `DB_PASSWORD` | Password database |
-| `GEMINI_API_KEY` | API key untuk Gemini API yang digunakan pada fitur generate teks |
-| `GEMINI_API_URL` | URL endpoint Gemini API |
-| `CLOUDFLARE_WORKER_AI_URL` | URL endpoint Cloudflare Worker untuk fitur generate gambar text-to-image |
-| `CLOUDFLARE_WORKER_AI_TOKEN` | Token akses Cloudflare Worker, jika endpoint membutuhkan autentikasi |
+Sertakan token di header **Authorization** pada setiap request:
 
-## Alur Kerja Chatbot
+```http
+Authorization: Bearer 1|abc123xyz...
+```
 
-1. Pengguna membuka halaman chatbot.
-2. Pengguna mengetik pesan atau prompt pada form input.
-3. Frontend mengirim request ke endpoint backend.
-4. Backend melakukan validasi input.
-5. Jika request berupa generate teks, backend mengirim prompt ke Gemini API.
-6. Jika request berupa generate gambar, backend mengirim prompt ke Cloudflare Worker AI.
-7. Layanan AI mengembalikan respons berupa teks atau hasil gambar.
-8. Backend menyimpan riwayat request dan respons ke database.
-9. Backend mengirim respons ke frontend.
-10. Frontend menampilkan jawaban teks atau gambar kepada pengguna.
+---
 
-## Deployment ke Railway
+### 2. Health Check
 
-Langkah umum deployment ke Railway:
+#### GET `/api/v1/health`
 
-1. Push project ke GitHub.
-2. Login ke Railway.
-3. Buat project baru di Railway.
-4. Hubungkan repository GitHub.
-5. Tambahkan environment variable yang dibutuhkan.
-6. Tambahkan database MySQL jika diperlukan.
-7. Jalankan proses deploy.
-8. Pastikan aplikasi berhasil berjalan pada domain Railway.
+Cek status backend (tanpa auth).
+
+```bash
+curl http://localhost:8000/api/v1/health
+```
+
+#### GET `/api/v1/status`
+
+Cek versi API (tanpa auth).
+
+```bash
+curl http://localhost:8000/api/v1/status
+```
+
+---
+
+### 3. Chat Session
+
+Semua endpoint berikut memerlukan `Authorization: Bearer {token}`.
+
+#### 3.1 Buat Chat Session Baru
+
+```http
+POST /api/v1/chat-sessions
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "title": "Percakapan Baru"
+}
+```
+
+> `title` bersifat opsional. Jika tidak dikirim, default: `"Percakapan Baru"`.
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Chat session berhasil dibuat.",
+  "data": {
+    "id": 1,
+    "title": "Percakapan Baru",
+    "created_at": "2026-06-10T10:00:00.000000Z"
+  }
+}
+```
+
+#### 3.2 Daftar Chat Session
+
+```http
+GET /api/v1/chat-sessions?page=1&per_page=10&search=keyword
+Authorization: Bearer {token}
+```
+
+| Parameter  | Tipe   | Wajib | Default | Deskripsi                |
+| ---------- | ------ | :---: | ------- | ------------------------ |
+| `page`     | int    |  ❌   | 1       | Halaman ke-n             |
+| `per_page` | int    |  ❌   | 10      | Jumlah data per halaman  |
+| `search`   | string |  ❌   | —       | Pencarian berdasarkan title |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Daftar chat session berhasil diambil.",
+  "data": [
+    {
+      "id": 1,
+      "title": "Ide Konten TikTok",
+      "last_message": "Berikut ide konten yang bisa kamu buat...",
+      "messages_count": 8,
+      "updated_at": "2026-06-10T10:30:00.000000Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 3,
+    "per_page": 10,
+    "total": 30
+  }
+}
+```
+
+#### 3.3 Detail Chat Session
+
+```http
+GET /api/v1/chat-sessions/{id}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Detail chat session berhasil diambil.",
+  "data": {
+    "id": 1,
+    "title": "Ide Konten TikTok",
+    "created_at": "2026-06-10T10:00:00.000000Z",
+    "updated_at": "2026-06-10T10:30:00.000000Z"
+  }
+}
+```
+
+#### 3.4 Hapus Chat Session
+
+```http
+DELETE /api/v1/chat-sessions/{id}
+Authorization: Bearer {token}
+```
+
+> Menghapus session beserta **seluruh pesan** di dalamnya (cascade delete).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Chat session berhasil dihapus.",
+  "data": null
+}
+```
+
+---
+
+### 4. Chat Message
+
+#### 4.1 Ambil Semua Pesan dalam Session
+
+```http
+GET /api/v1/chat-sessions/{id}/messages
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Pesan chat berhasil diambil.",
+  "data": [
+    {
+      "id": 1,
+      "role": "user",
+      "content": "Apa itu API?",
+      "provider": null,
+      "model": null,
+      "created_at": "2026-06-10T10:00:00.000000Z"
+    },
+    {
+      "id": 2,
+      "role": "assistant",
+      "content": "API adalah perantara yang memungkinkan dua aplikasi saling berkomunikasi...",
+      "provider": "gemini",
+      "model": "gemini-1.5-flash",
+      "created_at": "2026-06-10T10:00:05.000000Z"
+    }
+  ]
+}
+```
+
+#### 4.2 Kirim Pesan & Generate Jawaban AI
+
+```http
+POST /api/v1/chat-sessions/{id}/messages
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "message": "Jelaskan apa itu API dengan bahasa sederhana."
+}
+```
+
+**Validasi:**
+
+| Field     | Aturan                          |
+| --------- | ------------------------------- |
+| `message` | Wajib, string, min 2, max 5000 |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Pesan berhasil diproses.",
+  "data": {
+    "user_message": {
+      "id": 12,
+      "role": "user",
+      "content": "Jelaskan apa itu API dengan bahasa sederhana.",
+      "created_at": "2026-06-10T10:40:00.000000Z"
+    },
+    "assistant_message": {
+      "id": 13,
+      "role": "assistant",
+      "content": "API adalah perantara yang memungkinkan dua aplikasi saling berkomunikasi...",
+      "provider": "gemini",
+      "model": "gemini-1.5-flash",
+      "created_at": "2026-06-10T10:40:05.000000Z"
+    }
+  }
+}
+```
+
+---
+
+## Panduan Integrasi Frontend (React)
+
+### Setup Axios Instance
+
+```javascript
+// src/lib/api.js
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:8000/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// Interceptor: Sisipkan token otomatis
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
+```
+
+### Contoh: Login & Simpan Token
+
+```javascript
+// src/services/authService.js
+import api from '../lib/api';
+
+export const login = async (email, password) => {
+  const response = await api.post('/login', { email, password });
+  const token = response.data.data.token;
+  localStorage.setItem('auth_token', token);
+  return token;
+};
+```
+
+### Contoh: Service Chat
+
+```javascript
+// src/services/chatService.js
+import api from '../lib/api';
+
+// Buat session baru
+export const createSession = async (title) => {
+  const res = await api.post('/chat-sessions', { title });
+  return res.data.data;
+};
+
+// Ambil daftar session
+export const getSessions = async (page = 1, perPage = 10, search = '') => {
+  const res = await api.get('/chat-sessions', {
+    params: { page, per_page: perPage, search },
+  });
+  return res.data;
+};
+
+// Ambil detail session
+export const getSession = async (id) => {
+  const res = await api.get(`/chat-sessions/${id}`);
+  return res.data.data;
+};
+
+// Ambil pesan dalam session
+export const getMessages = async (sessionId) => {
+  const res = await api.get(`/chat-sessions/${sessionId}/messages`);
+  return res.data.data;
+};
+
+// Kirim pesan ke AI
+export const sendMessage = async (sessionId, message) => {
+  const res = await api.post(`/chat-sessions/${sessionId}/messages`, { message });
+  return res.data.data;
+};
+
+// Hapus session
+export const deleteSession = async (id) => {
+  const res = await api.delete(`/chat-sessions/${id}`);
+  return res.data;
+};
+```
+
+### Contoh: Komponen Chat dengan React
+
+```jsx
+// Contoh alur penggunaan di React component
+import { useState, useEffect } from 'react';
+import { getSessions, createSession, getMessages, sendMessage } from './services/chatService';
+
+function ChatPage() {
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  // 1. Load daftar session saat halaman dibuka
+  useEffect(() => {
+    getSessions().then(res => setSessions(res.data));
+  }, []);
+
+  // 2. Load pesan saat session dipilih
+  useEffect(() => {
+    if (activeSessionId) {
+      getMessages(activeSessionId).then(setMessages);
+    }
+  }, [activeSessionId]);
+
+  // 3. Buat session baru
+  const handleNewChat = async () => {
+    const session = await createSession();
+    setSessions(prev => [session, ...prev]);
+    setActiveSessionId(session.id);
+    setMessages([]);
+  };
+
+  // 4. Kirim pesan
+  const handleSend = async () => {
+    if (!input.trim() || isSending) return;
+    setIsSending(true);
+
+    // Tampilkan pesan user sementara
+    const tempUserMsg = { role: 'user', content: input, id: 'temp' };
+    setMessages(prev => [...prev, tempUserMsg]);
+    setInput('');
+
+    try {
+      const result = await sendMessage(activeSessionId, input);
+      // Ganti pesan temp dengan data dari server
+      setMessages(prev => [
+        ...prev.filter(m => m.id !== 'temp'),
+        result.user_message,
+        result.assistant_message,
+      ]);
+    } catch (error) {
+      console.error('Gagal mengirim pesan:', error.response?.data?.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div>
+      {/* Sidebar: daftar session */}
+      {/* Chat Window: daftar messages */}
+      {/* Input: form kirim pesan */}
+    </div>
+  );
+}
+```
+
+### State Management yang Direkomendasikan
+
+| Library        | Kegunaan                              |
+| -------------- | ------------------------------------- |
+| TanStack Query | API fetching, caching, auto-refetch   |
+| Zustand/Context| Auth state (token, user info)         |
+| Axios          | HTTP client dengan interceptor        |
+
+---
+
+## Error Handling
+
+### Validation Error (422)
+
+```json
+{
+  "success": false,
+  "message": "Validasi gagal.",
+  "errors": {
+    "message": ["Pesan wajib diisi."]
+  }
+}
+```
+
+### Unauthorized (401)
+
+```json
+{
+  "success": false,
+  "message": "Unauthenticated.",
+  "errors": null
+}
+```
+
+### Forbidden — Ownership (403/404)
+
+User mencoba mengakses chat milik user lain:
+```json
+{
+  "success": false,
+  "message": "Anda tidak memiliki akses ke percakapan ini.",
+  "errors": null
+}
+```
+
+### Gemini API Error (502)
+
+```json
+{
+  "success": false,
+  "message": "Layanan AI sedang mengalami gangguan. Silakan coba beberapa saat lagi.",
+  "errors": null
+}
+```
+
+### Gemini Timeout (504)
+
+```json
+{
+  "success": false,
+  "message": "Layanan AI tidak merespons. Silakan coba beberapa saat lagi.",
+  "errors": null
+}
+```
+
+### Rate Limit Exceeded (429)
+
+```json
+{
+  "success": false,
+  "message": "Terlalu banyak request. Silakan coba lagi nanti.",
+  "errors": null
+}
+```
+
+---
+
+## Rate Limiting
+
+| Endpoint                                    | Limit               |
+| ------------------------------------------- | -------------------- |
+| Public endpoints (`/health`, `/status`)     | 60 request / menit   |
+| Authenticated endpoints (list, detail, dll) | 60 request / menit   |
+| `POST /chat-sessions/{id}/messages` (AI)    | 20 request / menit   |
+
+---
+
+## Struktur Database
+
+### Tabel `chat_sessions`
+
+| Kolom       | Tipe        | Deskripsi                        |
+| ----------- | ----------- | -------------------------------- |
+| `id`        | bigint (PK) | Primary key                      |
+| `user_id`   | bigint (FK) | Relasi ke tabel users            |
+| `title`     | string      | Judul session (default: "Percakapan Baru") |
+| `created_at`| timestamp   | Waktu dibuat                     |
+| `updated_at`| timestamp   | Waktu terakhir diupdate          |
+
+### Tabel `chat_messages`
+
+| Kolom             | Tipe                              | Deskripsi                      |
+| ----------------- | --------------------------------- | ------------------------------ |
+| `id`              | bigint (PK)                       | Primary key                    |
+| `chat_session_id` | bigint (FK)                       | Relasi ke chat_sessions        |
+| `role`            | enum(user, assistant, system)     | Pengirim pesan                 |
+| `content`         | text                              | Isi pesan                      |
+| `provider`        | string (nullable)                 | `gemini` untuk AI, null untuk user |
+| `model`           | string (nullable)                 | Model AI yang digunakan        |
+| `metadata`        | json (nullable)                   | Data tambahan opsional         |
+| `created_at`      | timestamp                         | Waktu dibuat                   |
+| `updated_at`      | timestamp                         | Waktu terakhir diupdate        |
+
+---
 
 ## Perintah Penting
 
 ```bash
+# Jalankan semua service sekaligus (server + queue + logs + vite)
+composer dev
+
+# Setup project dari awal
+composer setup
+
+# Jalankan server Laravel saja
 php artisan serve
-```
 
-Menjalankan server Laravel secara lokal.
-
-```bash
+# Jalankan Vite dev server saja
 npm run dev
-```
 
-Menjalankan Vite untuk proses development frontend.
-
-```bash
-npm run build
-```
-
-Membuat build asset frontend untuk production.
-
-```bash
+# Jalankan migrasi database
 php artisan migrate
-```
 
-Menjalankan migrasi database.
+# Rollback migrasi
+php artisan migrate:rollback
 
-```bash
+# Build frontend untuk production
+npm run build
+
+# Bersihkan cache
 php artisan config:clear
-```
-
-Membersihkan cache konfigurasi Laravel.
-
-```bash
 php artisan cache:clear
+
+# Jalankan test
+composer test
 ```
 
-Membersihkan cache aplikasi.
+---
 
-## Pembagian Tugas Tim
+## Troubleshooting
 
-### Backend Developer
+### 1. "Layanan AI belum dikonfigurasi"
 
-Bertanggung jawab terhadap pengembangan logic backend, API chatbot, integrasi Gemini API untuk generate teks, integrasi Cloudflare Worker AI untuk generate gambar, validasi request, serta pengelolaan database.
+**Penyebab:** `GEMINI_API_KEY` kosong di `.env`.
 
-### Frontend Developer
+**Solusi:**
+1. Dapatkan API key dari [Google AI Studio](https://aistudio.google.com/apikey)
+2. Tambahkan ke `.env`: `GEMINI_API_KEY=your_key_here`
+3. Jalankan: `php artisan config:clear`
 
-Bertanggung jawab terhadap tampilan antarmuka chatbot, implementasi Blade, styling menggunakan Tailwind CSS, serta integrasi tampilan dengan endpoint backend.
+### 2. CORS Error di Browser
 
-### DevOps Engineer
+**Penyebab:** `FRONTEND_URL` tidak sesuai dengan URL React.
 
-Bertanggung jawab terhadap pengelolaan repository GitHub, konfigurasi Railway, deployment aplikasi, serta pengaturan environment variable pada server.
+**Solusi:**
+1. Pastikan `FRONTEND_URL=http://localhost:5173` di `.env`
+2. Jalankan: `php artisan config:clear`
 
-## Catatan Pengembangan
+### 3. "Unauthenticated" pada Endpoint Chat
 
-Beberapa hal yang perlu diperhatikan selama pengembangan:
+**Penyebab:** Token tidak dikirim atau sudah expired.
 
-- Jangan menyimpan API key secara langsung di dalam kode.
-- Gunakan file `.env` untuk menyimpan konfigurasi sensitif.
-- Pastikan validasi input dilakukan sebelum request dikirim ke layanan AI.
-- Simpan riwayat percakapan dengan struktur database yang jelas.
-- Pastikan error dari Gemini API dan Cloudflare Worker AI ditangani dengan baik.
-- Gunakan GitHub untuk version control dan kolaborasi tim.
+**Solusi:**
+1. Login ulang untuk mendapatkan token baru
+2. Pastikan header `Authorization: Bearer {token}` dikirim di setiap request
+
+### 4. "Terlalu banyak request"
+
+**Penyebab:** Rate limit terlampaui.
+
+**Solusi:** Tunggu 1 menit lalu coba lagi. Limit AI generate: 20 req/menit.
+
+### 5. Migrasi Gagal
+
+**Solusi:**
+```bash
+php artisan migrate:fresh   # WARNING: Menghapus semua data
+```
+
+---
+
+## Fitur Auto-Generate Title
+
+Saat user mengirim pesan pertama di session yang masih berjudul "Percakapan Baru", sistem otomatis mengambil 50 karakter pertama dari pesan tersebut sebagai title session.
+
+**Contoh:**
+- Pesan: `"Buatkan ide konten tentang cara website mengingat user melalui session dan cookie"`
+- Title otomatis: `"Buatkan ide konten tentang cara website menging..."`
+
+---
+
+## Data Ownership
+
+Sistem menerapkan aturan kepemilikan data yang ketat:
+
+- User **hanya** bisa mengakses chat session miliknya sendiri
+- User **tidak bisa** melihat, mengirim pesan, atau menghapus session milik user lain
+- Setiap query database selalu difilter berdasarkan `user_id`
+
+---
 
 ## Lisensi
 
-Proyek ini dibuat untuk kebutuhan pembelajaran dan dokumentasi kelompok.
+Proyek ini dibuat untuk kebutuhan pembelajaran mata kuliah Sistem Web dan Mobile.
 
 ---
