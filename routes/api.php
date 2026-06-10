@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\HealthCheckController;
 use App\Http\Controllers\Api\ChatSessionController;
 use App\Http\Controllers\Api\ChatMessageController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\Dev\GeminiTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,3 +71,12 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
         Route::get('/profile/stats', [ProfileController::class, 'stats'])->name('profile.stats');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Development Endpoints (Opsional, khusus testing)
+|--------------------------------------------------------------------------
+*/
+if (app()->environment('local', 'development', 'testing')) {
+    Route::post('/dev/gemini/test', [GeminiTestController::class, 'test'])->name('api.dev.gemini.test');
+}

@@ -421,6 +421,30 @@ Cek versi API (tanpa auth).
 curl http://localhost:8000/api/v1/status
 ```
 
+#### POST `/api/dev/gemini/test`
+
+Endpoint opsional khusus untuk _development_ untuk menguji integrasi Gemini API tanpa memerlukan sesi chat (tanpa autentikasi).
+
+```http
+POST /api/dev/gemini/test
+Content-Type: application/json
+
+{
+  "prompt": "Jelaskan apa itu Laravel secara singkat."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Gemini berhasil merespons.",
+  "data": {
+    "text": "Laravel adalah framework PHP untuk membangun aplikasi web..."
+  }
+}
+```
+
 ---
 
 ### 3. Chat Session
