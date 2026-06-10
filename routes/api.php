@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\HealthCheckController;
 use App\Http\Controllers\Api\ChatSessionController;
 use App\Http\Controllers\Api\ChatMessageController;
+use App\Http\Controllers\Api\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,5 +62,11 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
         Route::post('chat-sessions/{chatSession}/messages', [ChatMessageController::class, 'store'])
             ->name('chat-sessions.messages.store')
             ->middleware('throttle:ai-generate');
+
+        // User Profile
+        Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+        Route::get('/profile/stats', [ProfileController::class, 'stats'])->name('profile.stats');
     });
 });

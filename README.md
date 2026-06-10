@@ -109,9 +109,16 @@ cd AI-ChatBot
 
 ### 2. Install Dependencies
 
+Install dependency untuk backend (Laravel) dan frontend (React):
+
 ```bash
+# Install dependency Backend (berada di root folder)
 composer install
+
+# Install dependency Frontend (masuk ke folder frontend)
+cd frontend
 npm install
+cd ..
 ```
 
 ### 3. Salin File Environment
@@ -215,33 +222,32 @@ MIDTRANS_IS_PRODUCTION=false
 
 ---
 
-## Menjalankan Aplikasi
+## Menjalankan Aplikasi (Monorepo)
 
-### Opsi 1: Jalankan Semua Sekaligus (Direkomendasikan)
+Aplikasi ini menggunakan arsitektur **Monorepo**, di mana backend (Laravel API) berada di folder utama (root) dan frontend (React SPA) berada terpisah di dalam folder `frontend/`. Anda perlu menjalankan keduanya secara bersamaan di terminal yang berbeda.
 
-```bash
-composer dev
-```
+### Terminal 1: Menjalankan Backend (Laravel API)
 
-Perintah ini menjalankan secara bersamaan:
-- Laravel server (`http://localhost:8000`)
-- Queue listener
-- Log viewer (Pail)
-- Vite dev server (`http://localhost:5173`)
+Buka terminal di **folder utama (root)** proyek (`AI-ChatBot/`), lalu jalankan:
 
-### Opsi 2: Jalankan Manual Satu Per Satu
-
-**Terminal 1 — Laravel Backend:**
 ```bash
 php artisan serve
 ```
+> Server backend akan berjalan di `http://localhost:8000`.
 
-**Terminal 2 — Vite Frontend:**
+### Terminal 2: Menjalankan Frontend (React SPA)
+
+Buka terminal baru, masuk ke **folder `frontend/`**, lalu jalankan server pengembangan Vite:
+
 ```bash
+cd frontend
 npm run dev
 ```
+> Server frontend akan berjalan di `http://localhost:5173`. Frontend sudah dikonfigurasi (melalui `vite.config.js`) untuk mem-proxy request API secara otomatis ke backend `http://localhost:8000`.
 
-**Terminal 3 — Queue Worker (opsional):**
+### Terminal 3: Queue Worker (Opsional)
+
+Jika Anda menggunakan fitur antrean (Queue) di Laravel untuk tugas latar belakang, buka terminal baru di **folder utama (root)** dan jalankan:
 ```bash
 php artisan queue:listen
 ```
@@ -598,6 +604,111 @@ Content-Type: application/json
       "model": "gemini-1.5-flash",
       "created_at": "2026-06-10T10:40:05.000000Z"
     }
+  }
+}
+```
+
+---
+
+### 5. User Profile
+
+Semua endpoint berikut memerlukan `Authorization: Bearer {token}`.
+
+#### 5.1 Lihat Profile User
+
+```http
+GET /api/v1/profile
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Profile berhasil diambil.",
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "created_at": "2026-06-10T10:00:00.000000Z"
+  }
+}
+```
+
+#### 5.2 Update Nama User
+
+```http
+PUT /api/v1/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "John Doe Updated"
+}
+```
+
+**Validasi:**
+| Field  | Aturan                          |
+| ------ | ------------------------------- |
+| `name` | Wajib, string, min 3, max 100   |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Profile berhasil diperbarui.",
+  "data": {
+    "id": 1,
+    "name": "John Doe Updated",
+    "email": "john@example.com"
+  }
+}
+```
+
+#### 5.3 Update Password User
+
+```http
+PUT /api/v1/profile/password
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "current_password": "old_password_here",
+  "password": "new_password_here",
+  "password_confirmation": "new_password_here"
+}
+```
+
+**Validasi:**
+| Field              | Aturan                                    |
+| ------------------ | ----------------------------------------- |
+| `current_password` | Wajib, string, harus cocok dengan db      |
+| `password`         | Wajib, string, min 8, confirmed           |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Password berhasil diperbarui.",
+  "data": null
+}
+```
+
+#### 5.4 Ambil Statistik Dasar User
+
+```http
+GET /api/v1/profile/stats
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Statistik profile berhasil diambil.",
+  "data": {
+    "total_sessions": 15,
+    "total_messages": 120
   }
 }
 ```
