@@ -73,6 +73,11 @@ class GeminiService extends ExternalApiService implements TextGeneratorInterface
                 ->timeout($this->timeout)
                 ->withQueryParameters(['key' => $this->apiKey])
                 ->post($url, [
+                    'systemInstruction' => [
+                        'parts' => [
+                            ['text' => 'Anda adalah AI asisten yang ramah dan membantu. Selalu gunakan Bahasa Indonesia yang baik dan sopan kecuali pengguna meminta bahasa lain.']
+                        ]
+                    ],
                     'contents' => [
                         [
                             'parts' => [
@@ -127,6 +132,114 @@ class GeminiService extends ExternalApiService implements TextGeneratorInterface
             );
         } catch (\Exception $e) {
             Log::error('Gemini Service Exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw new ExternalApiException(
+                'Layanan AI sedang mengalami gangguan. Silakan coba beberapa saat lagi.',
+                'gemini',
+                502,
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Generate respons AI berdasarkan riwayat percakapan.
+     *
+     * @param array $messages Array pesan dengan format [['role' => 'user|assistant', 'content' => '...']]
+     * @param array $options Opsi tambahan (model override, dll)
+     * @return string Teks jawaban AI
+     *
+     * @throws ExternalApiException
+     */
+    public function generateChat(array $messages, array $options = []): string
+    {
+        // Validasi API key
+        if (empty($this->apiKey)) {
+            Log::error('Gemini API key is not configured.');
+            throw new ExternalApiException(
+                'Layanan AI belum dikonfigurasi. Silakan hubungi administrator.',
+                'gemini',
+                503
+            );
+        }
+
+        try {
+            $model = $options['model'] ?? $this->model;
+            $url = "{$this->baseUrl}/models/{$model}:generateContent";
+
+            $contents = [];
+            foreach ($messages as $msg) {
+                // Gemini API uses 'model' instead of 'assistant' for AI role
+                $role = $msg['role'] === 'assistant' ? 'model' : 'user';
+                $contents[] = [
+                    'role' => $role,
+                    'parts' => [
+                        ['text' => $msg['content']]
+                    ]
+                ];
+            }
+
+            $response = $this->client()
+                ->timeout($this->timeout)
+                ->withQueryParameters(['key' => $this->apiKey])
+                ->post($url, [
+                    'systemInstruction' => [
+                        'parts' => [
+                            ['text' => 'Anda adalah AI asisten yang ramah dan membantu. Selalu gunakan Bahasa Indonesia yang baik dan sopan kecuali pengguna meminta bahasa lain.']
+                        ]
+                    ],
+                    'contents' => $contents,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('Gemini API Error (Chat)', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'model' => $model,
+                ]);
+
+                throw new ExternalApiException(
+                    'Layanan AI sedang mengalami gangguan. Silakan coba beberapa saat lagi.',
+                    'gemini',
+                    502
+                );
+            }
+
+            // Ekstrak teks jawaban dari response Gemini
+            $text = $this->extractText($response->json());
+
+            if (empty($text)) {
+                Log::warning('Gemini API returned empty response for chat', [
+                    'model' => $model,
+                    'message_count' => count($messages),
+                ]);
+
+                return 'Maaf, saya tidak dapat memberikan jawaban saat ini. Silakan coba lagi.';
+            }
+
+            return $text;
+
+        } catch (ExternalApiException $e) {
+            throw $e;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Gemini API Timeout (Chat)', [
+                'message' => $e->getMessage(),
+                'timeout' => $this->timeout,
+            ]);
+
+            throw new ExternalApiException(
+                'Layanan AI tidak merespons. Silakan coba beberapa saat lagi.',
+                'gemini',
+                504,
+                0,
+                $e
+            );
+        } catch (\Exception $e) {
+            Log::error('Gemini Service Exception (Chat)', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

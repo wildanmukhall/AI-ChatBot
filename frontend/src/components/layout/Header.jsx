@@ -1,4 +1,5 @@
 import { LuMenu, LuPlus } from 'react-icons/lu';
+import useAuthStore from '../../stores/authStore';
 
 /**
  * Header hanya tampil di mobile (md:hidden).
@@ -10,6 +11,8 @@ import { LuMenu, LuPlus } from 'react-icons/lu';
  *  - sessionTitle  : nama / judul sesi chat yang aktif
  */
 export function Header({ onOpenSidebar, onNewChat, sessionTitle }) {
+  const user = useAuthStore((state) => state.user);
+
   return (
     <header className="md:hidden sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
       <div className="flex items-center justify-between h-14 px-4">
@@ -26,7 +29,7 @@ export function Header({ onOpenSidebar, onNewChat, sessionTitle }) {
 
         {/* Tengah: Nama sesi chat */}
         <span className="flex-1 mx-3 text-sm font-sans font-semibold text-slate-700 dark:text-slate-200 truncate text-center">
-          {sessionTitle || 'AI ChatBot'}
+          {sessionTitle || user?.name || 'AI ChatBot'}
         </span>
 
         {/* Kanan: Tambah chat baru */}

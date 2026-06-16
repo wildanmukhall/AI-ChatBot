@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthCheckController;
 use App\Http\Controllers\Api\ChatSessionController;
 use App\Http\Controllers\Api\ChatMessageController;
@@ -15,9 +16,15 @@ use App\Http\Controllers\Api\Dev\GeminiTestController;
 | Semua route API menggunakan prefix /api secara otomatis dari Laravel.
 | Ditambahkan prefix v1 untuk versioning API.
 |
-| Struktur endpoint:
-|   GET /api/v1/health  → Health check
-|   GET /api/v1/status  → API version status
+| Struktur endpoint sesuai PRD:
+|   GET  /api/v1/health  → Health check
+|   GET  /api/v1/status  → API version status
+|
+| Auth endpoints (PRD Section 9.1):
+|   POST /api/v1/auth/register → Register
+|   POST /api/v1/auth/login    → Login
+|   POST /api/v1/auth/logout   → Logout (auth)
+|   GET  /api/v1/auth/me       → Data user aktif (auth)
 |
 | Chat endpoints (authenticated):
 |   POST   /api/v1/chat-sessions              → Buat chat session
@@ -43,6 +50,26 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
 
     Route::get('/status', [HealthCheckController::class, 'status'])
         ->name('api.status');
+
+    // Authentication (PRD Section 9.1)
+    Route::prefix('auth')->group(function () {
+        Route::post('/register', [AuthController::class, 'register'])
+            ->middleware('throttle:5,1')
+            ->name('auth.register');
+
+        Route::post('/login', [AuthController::class, 'login'])
+            ->middleware('throttle:5,1')
+            ->name('auth.login');
+
+        // Protected auth endpoints
+        Route::middleware(['auth:sanctum'])->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout'])
+                ->name('auth.logout');
+
+            Route::get('/me', [AuthController::class, 'me'])
+                ->name('auth.me');
+        });
+    });
 
     /*
     |----------------------------------------------------------------------

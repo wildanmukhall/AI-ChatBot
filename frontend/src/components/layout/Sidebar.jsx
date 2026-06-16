@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import useAuthStore from "../../stores/authStore";
 import {
     LuMessageSquare,
     LuImage,
@@ -8,6 +9,12 @@ import {
 } from "react-icons/lu";
 
 export function Sidebar({ isOpen, onClose }) {
+    const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const logout = useAuthStore((state) => state.logout);
+
+    const initial = (user?.name || 'U').charAt(0).toUpperCase();
+
     const navItems = [
         {
             name: "Dashboard",
@@ -57,7 +64,7 @@ export function Sidebar({ isOpen, onClose }) {
                 <div className="flex flex-col h-full">
                     {/* Logo / Brand Area */}
                     <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200 dark:border-slate-800">
-                        <span className="font-montserrat font-bold text-xl bg-clip-text text-transparent bg-linear-to-r from-blue-500 to-purple-500">
+                        <span className="font-montserrat font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
                             AI ChatBot
                         </span>
                     </div>
@@ -98,7 +105,7 @@ export function Sidebar({ isOpen, onClose }) {
                             </div>
                             <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
                                 <div
-                                    className="bg-linear-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
                                     style={{ width: "25%" }}
                                 ></div>
                             </div>
@@ -109,19 +116,24 @@ export function Sidebar({ isOpen, onClose }) {
                             {/* User Avatar */}
                             <button
                                 title="Profile"
-                                className="flex items-center justify-center w-8 h-8 rounded-full bg-linear-to-br from-blue-400 to-purple-500 text-white font-montserrat font-semibold text-sm shrink-0 shadow hover:opacity-90 transition-opacity"
+                                onClick={() => { navigate('/profile'); onClose(); }}
+                                className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white font-montserrat font-semibold text-sm flex-shrink-0 shadow hover:opacity-90 transition-opacity"
                             >
-                                U
+                                {initial}
                             </button>
 
                             {/* Username / display name */}
                             <span className="flex-1 text-sm font-sans font-medium text-slate-700 dark:text-slate-300 truncate">
-                                Username
+                                {user?.name || 'User'}
                             </span>
 
                             {/* Sign Out — icon only */}
                             <button
                                 title="Sign Out"
+                                onClick={async () => {
+                                    await logout();
+                                    navigate('/login', { replace: true });
+                                }}
                                 className="flex items-center justify-center w-8 h-8 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                             >
                                 <LuLogOut className="text-xl" />
