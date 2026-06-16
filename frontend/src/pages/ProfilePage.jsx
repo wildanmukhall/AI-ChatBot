@@ -31,7 +31,7 @@ export default function ProfilePage() {
     });
 
     return (
-        <div className="space-y-8 max-w-2xl">
+        <div className="space-y-8 w-full">
             <div>
                 <h1 className="text-2xl md:text-3xl font-montserrat font-bold text-slate-900 dark:text-slate-50">Profile</h1>
                 <p className="text-slate-500 dark:text-slate-400 font-sans mt-1">Kelola informasi akun kamu.</p>
