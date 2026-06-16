@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import useAuthStore from "../stores/authStore";
 import {
     LuMail,
     LuLock,
@@ -11,19 +12,24 @@ import {
 } from "react-icons/lu";
 
 export default function LoginPage() {
+    const navigate = useNavigate();
+    const { login, isLoading, error, clearError } = useAuthStore();
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({ email: "", password: "" });
 
     const handleChange = (e) => {
+        clearError();
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
-        // TODO: connect to API
-        setTimeout(() => setIsLoading(false), 2000);
+        try {
+            await login(form);
+            navigate("/dashboard", { replace: true });
+        } catch {
+            // Error sudah di-set di authStore
+        }
     };
 
     return (
@@ -70,25 +76,17 @@ export default function LoginPage() {
                         Masuk ke akun kamu untuk melanjutkan
                     </p>
 
-                    {/* Google OAuth */}
-                    <button
-                        type="button"
-                        className="flex items-center justify-center gap-3 w-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 font-sans font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors mb-5 shadow-sm"
-                    >
-                        {/* Google Icon SVG */}
-                        <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
-                            <path d="M47.5 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h13.2c-.6 3-2.3 5.5-4.8 7.2v6h7.8c4.6-4.2 7.3-10.4 7.3-17.3z" fill="#4285F4"/>
-                            <path d="M24 48c6.5 0 12-2.1 16-5.8l-7.8-6c-2.2 1.5-5 2.3-8.2 2.3-6.3 0-11.6-4.2-13.5-10H2.4v6.2C6.4 42.6 14.6 48 24 48z" fill="#34A853"/>
-                            <path d="M10.5 28.5c-.5-1.5-.8-3-.8-4.5s.3-3 .8-4.5v-6.2H2.4C.9 16.5 0 20.1 0 24s.9 7.5 2.4 10.7l8.1-6.2z" fill="#FBBC05"/>
-                            <path d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.3 30.4 0 24 0 14.6 0 6.4 5.4 2.4 13.3l8.1 6.2C12.4 13.7 17.7 9.5 24 9.5z" fill="#EA4335"/>
-                        </svg>
-                        Lanjutkan dengan Google
-                    </button>
+                    {/* Error Alert */}
+                    {error && (
+                        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl px-4 py-3 mb-5">
+                            <p className="font-sans text-sm text-rose-400">{error}</p>
+                        </div>
+                    )}
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 mb-5">
                         <div className="flex-1 h-px bg-slate-800" />
-                        <span className="font-sans text-xs text-slate-500">atau</span>
+                        <span className="font-sans text-xs text-slate-500">masuk dengan email</span>
                         <div className="flex-1 h-px bg-slate-800" />
                     </div>
 
@@ -127,12 +125,6 @@ export default function LoginPage() {
                                 >
                                     Password
                                 </label>
-                                <a
-                                    href="#"
-                                    className="font-sans text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-                                >
-                                    Lupa password?
-                                </a>
                             </div>
                             <div className="relative">
                                 <LuLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg" />

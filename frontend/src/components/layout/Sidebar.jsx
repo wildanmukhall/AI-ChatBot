@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import useAuthStore from "../../stores/authStore";
 import {
     LuMessageSquare,
     LuImage,
@@ -10,6 +10,8 @@ import {
 } from "react-icons/lu";
 
 export function Sidebar({ isOpen, onClose }) {
+    const navigate = useNavigate();
+    const logout = useAuthStore((state) => state.logout);
     const navItems = [
         {
             name: "Dashboard",
@@ -113,7 +115,13 @@ export function Sidebar({ isOpen, onClose }) {
                             </div>
                         </div>
 
-                        <button className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl font-sans font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors">
+                        <button
+                            onClick={async () => {
+                                await logout();
+                                navigate('/login', { replace: true });
+                            }}
+                            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl font-sans font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors"
+                        >
                             <LuLogOut className="text-xl" />
                             Sign Out
                         </button>

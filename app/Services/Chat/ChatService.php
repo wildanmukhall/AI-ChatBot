@@ -56,8 +56,8 @@ class ChatService
 
         $query = $user->chatSessions()
             ->withCount('messages')
-            ->with('lastMessage:id,chat_session_id,content')
-            ->orderBy('updated_at', 'desc');
+            ->with('lastMessage')
+            ->orderBy('chat_sessions.updated_at', 'desc');
 
         if ($search) {
             $query->where('title', 'like', "%{$search}%");
@@ -121,9 +121,18 @@ class ChatService
         // 2. Auto-generate title dari pesan pertama
         $this->autoGenerateTitle($session, $message);
 
-        // 3. Panggil Gemini API melalui GeminiService
+        // 3. Ambil riwayat percakapan untuk konteks (ambil 20 pesan terakhir agar token tidak membengkak)
+        $history = $session->messages()
+            ->orderBy('created_at', 'desc')
+            ->take(20) // Limit riwayat agar tidak terlalu besar (sesuaikan dengan kebutuhan)
+            ->get(['role', 'content'])
+            ->reverse()
+            ->values()
+            ->toArray();
+
+        // 4. Panggil Gemini API melalui GeminiService dengan riwayat
         try {
-            $aiResponse = $this->geminiService->generateText($message);
+            $aiResponse = $this->geminiService->generateChat($history);
         } catch (\Exception $e) {
             Log::error('Gemini generate failed after user message saved', [
                 'user_id' => $user->id,
