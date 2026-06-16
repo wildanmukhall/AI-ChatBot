@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
     LuMessageSquare,
@@ -6,7 +5,6 @@ import {
     LuLayoutDashboard,
     LuUser,
     LuLogOut,
-    LuX,
 } from "react-icons/lu";
 
 export function Sidebar({ isOpen, onClose }) {
@@ -59,16 +57,9 @@ export function Sidebar({ isOpen, onClose }) {
                 <div className="flex flex-col h-full">
                     {/* Logo / Brand Area */}
                     <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200 dark:border-slate-800">
-                        <span className="font-montserrat font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
+                        <span className="font-montserrat font-bold text-xl bg-clip-text text-transparent bg-linear-to-r from-blue-500 to-purple-500">
                             AI ChatBot
                         </span>
-                        {/* Mobile Close Button */}
-                        <button
-                            onClick={onClose}
-                            className="md:hidden text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                        >
-                            <LuX className="text-2xl" />
-                        </button>
                     </div>
 
                     {/* Navigation Links */}
@@ -107,16 +98,35 @@ export function Sidebar({ isOpen, onClose }) {
                             </div>
                             <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
                                 <div
-                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
+                                    className="bg-linear-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
                                     style={{ width: "25%" }}
                                 ></div>
                             </div>
                         </div>
 
-                        <button className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl font-sans font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors">
-                            <LuLogOut className="text-xl" />
-                            Sign Out
-                        </button>
+                        {/* User Avatar + Sign Out Row */}
+                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
+                            {/* User Avatar */}
+                            <button
+                                title="Profile"
+                                className="flex items-center justify-center w-8 h-8 rounded-full bg-linear-to-br from-blue-400 to-purple-500 text-white font-montserrat font-semibold text-sm shrink-0 shadow hover:opacity-90 transition-opacity"
+                            >
+                                U
+                            </button>
+
+                            {/* Username / display name */}
+                            <span className="flex-1 text-sm font-sans font-medium text-slate-700 dark:text-slate-300 truncate">
+                                Username
+                            </span>
+
+                            {/* Sign Out — icon only */}
+                            <button
+                                title="Sign Out"
+                                className="flex items-center justify-center w-8 h-8 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                            >
+                                <LuLogOut className="text-xl" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </aside>
