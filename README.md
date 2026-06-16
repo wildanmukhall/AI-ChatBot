@@ -41,7 +41,7 @@ Aplikasi AI Chatbot berbasis web yang memungkinkan pengguna melakukan percakapan
 
 ### Anggota Tim
 
-| Nama                           |      NIM  | Role               |
+| Nama                           | NIM       | Role               |
 | -----------------------------  | -------:  | ------------------ |
 | Dandy Sultana Putra Ali        | 230705199 | Backend Developer  |
 | Syibran Malawi                 | 230705062 | Frontend Developer |
