@@ -1,1 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@500;600;700;800&display=swap');
+
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-indigo-200 selection:text-indigo-900;
+  }
+  
+  /* Dark mode base overrides if dark mode class is present */
+  .dark body {
+    @apply bg-slate-950 text-slate-50 selection:bg-indigo-900/50 selection:text-indigo-200;
+  }
+}
+
