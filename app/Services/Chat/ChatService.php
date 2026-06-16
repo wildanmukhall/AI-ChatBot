@@ -186,8 +186,9 @@ class ChatService
             return;
         }
 
-        // Hanya ubah title pada pesan pertama
-        if ($session->messages()->count() > 1) {
+        // Hanya ubah title pada pesan user pertama
+        // Gunakan where('role','user') agar tidak terganggu pesan assistant
+        if ($session->messages()->where('role', 'user')->count() > 1) {
             return;
         }
 
