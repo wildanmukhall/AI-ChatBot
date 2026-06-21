@@ -51,6 +51,10 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
     Route::get('/status', [HealthCheckController::class, 'status'])
         ->name('api.status');
 
+    // Payment Webhook (Public)
+    Route::post('/payments/midtrans/notification', [\App\Http\Controllers\Api\PaymentController::class, 'notification'])
+        ->name('payments.notification');
+
     // Authentication (PRD Section 9.1)
     Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register'])
@@ -96,6 +100,19 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
         Route::get('/profile/stats', [ProfileController::class, 'stats'])->name('profile.stats');
+
+        // Payments
+        Route::post('/payments/checkout', [\App\Http\Controllers\Api\PaymentController::class, 'checkout'])->name('payments.checkout');
+        Route::get('/payments/{order}', [\App\Http\Controllers\Api\PaymentController::class, 'show'])->name('payments.show');
+
+        // Image Generation
+        Route::post('/images/generate', [\App\Http\Controllers\Api\ImageGenerationController::class, 'generate'])->name('images.generate');
+        Route::get('/images/{id}/status', [\App\Http\Controllers\Api\ImageGenerationController::class, 'status'])->name('images.status');
+
+        // Image Gallery
+        Route::get('/images', [\App\Http\Controllers\Api\ImageGalleryController::class, 'index'])->name('images.index');
+        Route::get('/images/{id}', [\App\Http\Controllers\Api\ImageGalleryController::class, 'show'])->name('images.show');
+        Route::delete('/images/{id}', [\App\Http\Controllers\Api\ImageGalleryController::class, 'destroy'])->name('images.destroy');
     });
 });
 

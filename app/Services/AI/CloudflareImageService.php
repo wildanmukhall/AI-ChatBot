@@ -2,91 +2,57 @@
 
 namespace App\Services\AI;
 
+use Illuminate\Support\Facades\Http;
 use App\Exceptions\ExternalApiException;
-use App\Services\AI\Contracts\ImageGeneratorInterface;
-use App\Services\Shared\ExternalApiService;
-use Illuminate\Support\Facades\Log;
 
-/**
- * CloudflareImageService
- *
- * Service untuk berkomunikasi dengan Cloudflare Workers AI API.
- * Menangani generate gambar berbasis AI.
- *
- * Konfigurasi diambil dari config/services.php -> cloudflare
- * yang nilainya berasal dari file .env:
- * - CLOUDFLARE_API_TOKEN
- * - CLOUDFLARE_ACCOUNT_ID
- * - CLOUDFLARE_IMAGE_ENDPOINT
- *
- * Contoh penggunaan melalui Facade:
- *   CloudflareAI::generateImage('A cat sitting on a chair')
- *
- * Contoh penggunaan melalui DI:
- *   $cloudflareService->generateImage('A cat sitting on a chair')
- */
-class CloudflareImageService extends ExternalApiService implements ImageGeneratorInterface
+class CloudflareImageService
 {
-    protected string $apiToken;
     protected string $accountId;
-    protected string $imageEndpoint;
+    protected string $apiToken;
+    protected string $baseUrl;
+    protected string $model;
+    protected int $timeout;
+    protected int $retryTimes;
+    protected int $retrySleep;
 
     public function __construct()
     {
-        $this->apiToken = config('services.cloudflare.api_token', '');
-        $this->accountId = config('services.cloudflare.account_id', '');
-        $this->imageEndpoint = config('services.cloudflare.image_endpoint', '');
+        $this->accountId = config('services.cloudflare_ai.account_id', '');
+        $this->apiToken = config('services.cloudflare_ai.api_token', '');
+        $this->baseUrl = config('services.cloudflare_ai.base_url', 'https://api.cloudflare.com/client/v4');
+        $this->model = config('services.cloudflare_ai.image_model', '@cf/bytedance/stable-diffusion-xl-lightning');
+        $this->timeout = config('services.cloudflare_ai.timeout', 60);
+        $this->retryTimes = config('services.cloudflare_ai.retry_times', 1);
+        $this->retrySleep = config('services.cloudflare_ai.retry_sleep', 500);
     }
 
     /**
-     * Generate gambar menggunakan Cloudflare Workers AI.
-     *
-     * @param string $prompt Deskripsi gambar yang diinginkan
-     * @param array $options Opsi tambahan (size, style, dll)
-     * @return array Response dari Cloudflare API
-     *
-     * @throws ExternalApiException Jika Cloudflare API gagal
+     * Generate image from text prompt via Cloudflare Workers AI
      */
-    public function generateImage(string $prompt, array $options = []): array
+    public function generateImage(string $prompt, array $options = []): string
     {
-        try {
-            $url = $this->imageEndpoint
-                ?: "https://api.cloudflare.com/client/v4/accounts/{$this->accountId}/ai/run/@cf/stabilityai/stable-diffusion-xl-base-1.0";
-
-            $response = $this->client()
-                ->withToken($this->apiToken)
-                ->post($url, array_merge([
-                    'prompt' => $prompt,
-                ], $options));
-
-            if ($response->failed()) {
-                Log::error('Cloudflare AI Error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                throw new ExternalApiException(
-                    'Gagal menghubungi Cloudflare AI.',
-                    'cloudflare',
-                    502
-                );
-            }
-
-            return $response->json();
-        } catch (ExternalApiException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            Log::error('Cloudflare Service Exception', [
-                'message' => $e->getMessage(),
-            ]);
-
-            throw new ExternalApiException(
-                'Terjadi kesalahan saat menghubungi Cloudflare AI.',
-                'cloudflare',
-                502,
-                0,
-                $e
-            );
+        if (empty($this->accountId) || empty($this->apiToken)) {
+            throw new ExternalApiException('Cloudflare AI configuration is missing.');
         }
+
+        $endpoint = "{$this->baseUrl}/accounts/{$this->accountId}/ai/run/{$this->model}";
+
+        $payload = ['prompt' => $prompt];
+
+        $response = Http::withToken($this->apiToken)
+            ->timeout($this->timeout)
+            ->retry($this->retryTimes, $this->retrySleep)
+            ->post($endpoint, $payload);
+
+        if ($response->failed()) {
+            throw new ExternalApiException('Cloudflare AI request failed: ' . $response->body(), $response->status());
+        }
+
+        $contentType = $response->header('Content-Type');
+        if (strpos($contentType, 'image/') === false && strpos($contentType, 'application/octet-stream') === false) {
+             throw new ExternalApiException('Invalid response from Cloudflare AI: ' . $response->body());
+        }
+
+        return $response->body();
     }
 }

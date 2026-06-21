@@ -2,16 +2,15 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\PaymentGatewayException;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PricingPlan;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
-/**
- * PaymentService
- *
- * Service layer untuk mengelola logika bisnis pembayaran.
- * Menjadi perantara antara controller dan MidtransService.
- *
- * Implementasi lengkap akan dilakukan pada modul Payment.
- */
 class PaymentService
 {
     protected MidtransService $midtransService;
@@ -21,22 +20,141 @@ class PaymentService
         $this->midtransService = $midtransService;
     }
 
-    /**
-     * Proses pembayaran baru (stub).
-     *
-     * Akan diimplementasikan pada modul Payment.
-     *
-     * @param array $data Data pembayaran
-     * @return array Hasil proses pembayaran
-     */
-    public function processPayment(array $data): array
+    public function checkout(User $user, int $pricingPlanId): array
     {
-        Log::info('PaymentService: processPayment dipanggil', ['data' => $data]);
+        $plan = PricingPlan::find($pricingPlanId);
 
-        // Stub: implementasi pada modul berikutnya
-        return [
-            'status' => 'pending',
-            'message' => 'Fitur payment belum diimplementasikan pada modul fondasi.',
-        ];
+        if (!$plan || !$plan->is_active) {
+            throw new PaymentGatewayException('Pricing plan tidak tersedia.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $orderCode = 'ORDER-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+
+            $order = Order::create([
+                'user_id' => $user->id,
+                'pricing_plan_id' => $plan->id,
+                'order_code' => $orderCode,
+                'amount' => $plan->price,
+                'image_quota' => $plan->image_quota,
+                'status' => 'pending',
+            ]);
+
+            $midtransResponse = $this->midtransService->createSnapTransaction($order, $user, $plan);
+
+            $payment = Payment::create([
+                'order_id' => $order->id,
+                'provider' => 'midtrans',
+                'transaction_status' => 'pending',
+            ]);
+
+            DB::commit();
+
+            return [
+                'order' => [
+                    'id' => $order->id,
+                    'order_code' => $order->order_code,
+                    'status' => $order->status,
+                    'amount' => $order->amount,
+                    'image_quota' => $order->image_quota,
+                ],
+                'payment' => [
+                    'provider' => 'midtrans',
+                    'snap_token' => $midtransResponse['token'],
+                    'redirect_url' => $midtransResponse['redirect_url'],
+                ]
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Checkout Failed', ['message' => $e->getMessage()]);
+            throw new PaymentGatewayException($e->getMessage() ?: 'Gagal melakukan checkout.');
+        }
+    }
+
+    public function handleMidtransNotification(array $payload): void
+    {
+        if (!$this->midtransService->verifySignature($payload)) {
+            Log::warning('Midtrans Invalid Signature', ['payload' => $payload]);
+            throw new PaymentGatewayException('Invalid payment signature.');
+        }
+
+        $orderCode = $payload['order_id'] ?? null;
+        if (!$orderCode) {
+            throw new PaymentGatewayException('Order ID tidak ditemukan dalam payload.');
+        }
+
+        $order = Order::where('order_code', $orderCode)->first();
+        if (!$order) {
+            Log::error('Midtrans Webhook Order Not Found', ['order_code' => $orderCode]);
+            throw new PaymentGatewayException('Order tidak ditemukan.');
+        }
+
+        $internalStatus = $this->midtransService->mapStatus($payload);
+        
+        DB::beginTransaction();
+        try {
+            $this->updatePayment($order, $payload);
+            
+            // Idempotency: Jika order sudah final (paid, failed, cancelled, denied, refunded, expired)
+            // Kita tidak perlu mengubah statusnya lagi kecuali ke status yang valid.
+            // Di PRD: Jika order sudah paid, jangan downgrade.
+            if ($order->status !== 'paid') {
+                $order->status = $internalStatus;
+                if ($internalStatus === 'paid') {
+                    $order->paid_at = now();
+                    // TODO: Implementasi modul kuota disini nanti
+                    // misal: $order->user->increment('image_quota', $order->image_quota);
+                } elseif ($internalStatus === 'expired') {
+                    $order->expired_at = now();
+                }
+                $order->save();
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update order from webhook', ['message' => $e->getMessage()]);
+            throw new PaymentGatewayException('Gagal mengupdate status pesanan.');
+        }
+    }
+
+    public function getUserOrder(User $user, int $orderId): Order
+    {
+        $order = Order::with('payment')->where('user_id', $user->id)->find($orderId);
+        
+        if (!$order) {
+            throw new PaymentGatewayException('Order tidak ditemukan.', 404);
+        }
+
+        return $order;
+    }
+
+    protected function updatePayment(Order $order, array $payload): Payment
+    {
+        $payment = $order->payment ?? new Payment(['order_id' => $order->id, 'provider' => 'midtrans']);
+        
+        $payment->transaction_id = $payload['transaction_id'] ?? $payment->transaction_id;
+        $payment->payment_type = $payload['payment_type'] ?? $payment->payment_type;
+        $payment->transaction_status = $payload['transaction_status'] ?? $payment->transaction_status;
+        $payment->fraud_status = $payload['fraud_status'] ?? $payment->fraud_status;
+        
+        if (isset($payload['gross_amount'])) {
+            $payment->gross_amount = $payload['gross_amount'];
+        } else {
+            $payment->gross_amount = $payment->gross_amount ?? $order->amount;
+        }
+
+        $payment->signature_key = $payload['signature_key'] ?? $payment->signature_key;
+        $payment->raw_response = $payload;
+
+        $internalStatus = $this->midtransService->mapStatus($payload);
+        if ($internalStatus === 'paid') {
+            $payment->paid_at = $payment->paid_at ?? now();
+        }
+
+        $payment->save();
+
+        return $payment;
     }
 }

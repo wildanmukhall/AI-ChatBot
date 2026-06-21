@@ -2,107 +2,125 @@
 
 namespace App\Services\Payment;
 
-use App\Exceptions\ExternalApiException;
-use App\Services\Shared\ExternalApiService;
+use App\Exceptions\PaymentGatewayException;
+use App\Models\Order;
+use App\Models\User;
+use App\Models\PricingPlan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-/**
- * MidtransService
- *
- * Service untuk berkomunikasi dengan Midtrans Payment Gateway.
- * Menangani pembuatan transaksi dan verifikasi pembayaran.
- *
- * Konfigurasi diambil dari config/services.php -> midtrans
- * yang nilainya berasal dari file .env:
- * - MIDTRANS_SERVER_KEY
- * - MIDTRANS_CLIENT_KEY
- * - MIDTRANS_IS_PRODUCTION
- *
- * Contoh penggunaan melalui Facade:
- *   MidtransPayment::createTransaction($params)
- *
- * Contoh penggunaan melalui DI:
- *   $midtransService->createTransaction($params)
- */
-class MidtransService extends ExternalApiService
+class MidtransService
 {
     protected string $serverKey;
     protected string $clientKey;
     protected bool $isProduction;
-    protected string $baseUrl;
+    protected string $snapUrl;
+    protected string $apiBaseUrl;
 
     public function __construct()
     {
         $this->serverKey = config('services.midtrans.server_key', '');
         $this->clientKey = config('services.midtrans.client_key', '');
         $this->isProduction = (bool) config('services.midtrans.is_production', false);
-        $this->baseUrl = $this->isProduction
-            ? 'https://app.midtrans.com/snap/v1'
-            : 'https://app.sandbox.midtrans.com/snap/v1';
+        $this->snapUrl = config('services.midtrans.snap_url', 'https://app.sandbox.midtrans.com/snap/v1/transactions');
+        $this->apiBaseUrl = config('services.midtrans.api_base_url', 'https://api.sandbox.midtrans.com');
+        
+        if ($this->isProduction) {
+            $this->snapUrl = 'https://app.midtrans.com/snap/v1/transactions';
+            $this->apiBaseUrl = 'https://api.midtrans.com';
+        }
     }
 
-    /**
-     * Membuat transaksi baru di Midtrans (stub).
-     *
-     * Implementasi lengkap akan dilakukan pada modul Payment.
-     *
-     * @param array $params Parameter transaksi
-     * @return array Response dari Midtrans
-     *
-     * @throws ExternalApiException Jika Midtrans API gagal
-     */
-    public function createTransaction(array $params): array
+    public function createSnapTransaction(Order $order, User $user, PricingPlan $plan): array
     {
+        if (empty($this->serverKey)) {
+            throw new PaymentGatewayException('Midtrans server key is not configured.');
+        }
+
+        $payload = [
+            'transaction_details' => [
+                'order_id' => $order->order_code,
+                'gross_amount' => $order->amount,
+            ],
+            'customer_details' => [
+                'first_name' => $user->name,
+                'email' => $user->email,
+            ],
+            'item_details' => [
+                [
+                    'id' => 'PLAN-' . $plan->id,
+                    'price' => $order->amount,
+                    'quantity' => 1,
+                    'name' => $plan->name,
+                ]
+            ],
+        ];
+
         try {
-            $response = $this->client()
-                ->withBasicAuth($this->serverKey, '')
+            $response = Http::withBasicAuth($this->serverKey, '')
                 ->withHeaders(['Content-Type' => 'application/json'])
-                ->post("{$this->baseUrl}/transactions", $params);
+                ->post($this->snapUrl, $payload);
 
-            if ($response->failed()) {
-                Log::error('Midtrans API Error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                throw new ExternalApiException(
-                    'Gagal menghubungi Midtrans.',
-                    'midtrans',
-                    502
-                );
+            if ($response->successful()) {
+                return $response->json();
             }
 
-            return $response->json();
-        } catch (ExternalApiException $e) {
+            Log::error('Midtrans Snap API Error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'payload' => $payload
+            ]);
+
+            throw new PaymentGatewayException('Gagal membuat transaksi pembayaran. Silakan coba lagi.');
+        } catch (PaymentGatewayException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Midtrans Service Exception', [
                 'message' => $e->getMessage(),
             ]);
 
-            throw new ExternalApiException(
-                'Terjadi kesalahan saat menghubungi Midtrans.',
-                'midtrans',
-                502,
-                0,
-                $e
-            );
+            throw new PaymentGatewayException('Terjadi kesalahan saat menghubungi Midtrans.');
         }
     }
 
-    /**
-     * Mendapatkan client key untuk frontend.
-     */
-    public function getClientKey(): string
+    public function verifySignature(array $payload): bool
     {
-        return $this->clientKey;
+        $orderId = $payload['order_id'] ?? '';
+        $statusCode = $payload['status_code'] ?? '';
+        $grossAmount = $payload['gross_amount'] ?? '';
+        $signatureKey = $payload['signature_key'] ?? '';
+
+        $serverKey = $this->serverKey;
+
+        $generatedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+
+        return $generatedSignature === $signatureKey;
     }
 
-    /**
-     * Mengecek apakah menggunakan mode production.
-     */
-    public function isProduction(): bool
+    public function mapStatus(array $payload): string
     {
-        return $this->isProduction;
+        $transactionStatus = $payload['transaction_status'] ?? 'pending';
+        $fraudStatus = $payload['fraud_status'] ?? null;
+
+        if ($transactionStatus == 'capture') {
+            if ($fraudStatus == 'accept') {
+                return 'paid';
+            }
+            return 'pending'; // challenge
+        } elseif ($transactionStatus == 'settlement') {
+            return 'paid';
+        } elseif ($transactionStatus == 'cancel') {
+            return 'cancelled';
+        } elseif ($transactionStatus == 'deny') {
+            return 'denied';
+        } elseif ($transactionStatus == 'expire') {
+            return 'expired';
+        } elseif ($transactionStatus == 'failure') {
+            return 'failed';
+        } elseif ($transactionStatus == 'refund' || $transactionStatus == 'partial_refund') {
+            return 'refunded';
+        }
+
+        return 'pending';
     }
 }

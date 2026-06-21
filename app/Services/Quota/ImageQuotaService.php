@@ -19,42 +19,35 @@ class ImageQuotaService
 {
     /**
      * Mengecek apakah user masih memiliki kuota (stub).
-     *
-     * @param int $userId ID User
-     * @return bool Apakah masih memiliki kuota
      */
-    public function hasQuota(int $userId): bool
+    public function hasQuota(\App\Models\User $user): bool
     {
-        Log::info('ImageQuotaService: hasQuota dipanggil', ['user_id' => $userId]);
-
-        // Stub: implementasi pada modul berikutnya
+        Log::info('ImageQuotaService: hasQuota dipanggil', ['user_id' => $user->id]);
         return true;
     }
 
     /**
-     * Mengurangi kuota user setelah generate (stub).
-     *
-     * @param int $userId ID User
-     * @return void
+     * Mengurangi kuota user (stub).
      */
-    public function deductQuota(int $userId): void
+    public function consume(\App\Models\User $user, int $amount = 1, array $context = []): void
     {
-        Log::info('ImageQuotaService: deductQuota dipanggil', ['user_id' => $userId]);
+        Log::info('ImageQuotaService: consume dipanggil', ['user_id' => $user->id, 'amount' => $amount]);
+    }
 
-        // Stub: implementasi pada modul berikutnya
+    /**
+     * Mengembalikan kuota user (stub).
+     */
+    public function refund(\App\Models\User $user, int $amount = 1, array $context = []): void
+    {
+        Log::info('ImageQuotaService: refund dipanggil', ['user_id' => $user->id, 'amount' => $amount]);
     }
 
     /**
      * Mendapatkan sisa kuota user (stub).
-     *
-     * @param int $userId ID User
-     * @return int Sisa kuota
      */
-    public function getRemainingQuota(int $userId): int
+    public function getRemainingQuota(\App\Models\User $user): int
     {
-        Log::info('ImageQuotaService: getRemainingQuota dipanggil', ['user_id' => $userId]);
-
-        // Stub: implementasi pada modul berikutnya
-        return 0;
+        Log::info('ImageQuotaService: getRemainingQuota dipanggil', ['user_id' => $user->id]);
+        return 10;
     }
 }

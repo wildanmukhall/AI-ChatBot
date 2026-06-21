@@ -82,6 +82,20 @@ return [
         'server_key' => env('MIDTRANS_SERVER_KEY'),
         'client_key' => env('MIDTRANS_CLIENT_KEY'),
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
+        'is_sanitized' => env('MIDTRANS_IS_SANITIZED', true),
+        'is_3ds' => env('MIDTRANS_IS_3DS', true),
+        'snap_url' => env('MIDTRANS_SNAP_URL', 'https://app.sandbox.midtrans.com/snap/v1/transactions'),
+        'api_base_url' => env('MIDTRANS_API_BASE_URL', 'https://api.sandbox.midtrans.com'),
+    ],
+
+    'cloudflare_ai' => [
+        'account_id' => env('CLOUDFLARE_AI_ACCOUNT_ID'),
+        'api_token' => env('CLOUDFLARE_AI_API_TOKEN'),
+        'base_url' => env('CLOUDFLARE_AI_BASE_URL', 'https://api.cloudflare.com/client/v4'),
+        'image_model' => env('CLOUDFLARE_AI_IMAGE_MODEL', '@cf/bytedance/stable-diffusion-xl-lightning'),
+        'timeout' => env('CLOUDFLARE_AI_TIMEOUT', 60),
+        'retry_times' => env('CLOUDFLARE_AI_RETRY_TIMES', 1),
+        'retry_sleep' => env('CLOUDFLARE_AI_RETRY_SLEEP', 500),
     ],
 
 ];

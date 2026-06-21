@@ -58,4 +58,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(ChatSession::class);
     }
+
+    /**
+     * Orders milik user ini.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Generated images milik user ini.
+     */
+    public function generatedImages(): HasMany
+    {
+        return $this->hasMany(GeneratedImage::class);
+    }
 }

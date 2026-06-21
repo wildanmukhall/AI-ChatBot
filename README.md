@@ -203,10 +203,14 @@ CLOUDFLARE_API_TOKEN=
 CLOUDFLARE_ACCOUNT_ID=
 CLOUDFLARE_IMAGE_ENDPOINT=
 
-# Midtrans Payment (untuk pricing plan — Phase selanjutnya)
-MIDTRANS_SERVER_KEY=
-MIDTRANS_CLIENT_KEY=
+# Midtrans Payment (Payment Gateway)
+MIDTRANS_SERVER_KEY="SB-Mid-server-YOUR_SERVER_KEY"
+MIDTRANS_CLIENT_KEY="SB-Mid-client-YOUR_CLIENT_KEY"
 MIDTRANS_IS_PRODUCTION=false
+MIDTRANS_IS_SANITIZED=true
+MIDTRANS_IS_3DS=true
+MIDTRANS_SNAP_URL="https://app.sandbox.midtrans.com/snap/v1/transactions"
+MIDTRANS_API_BASE_URL="https://api.sandbox.midtrans.com"
 ```
 
 ### Tabel Environment Variable
@@ -737,6 +741,103 @@ Authorization: Bearer {token}
 }
 ```
 
+### 6. Payment Gateway (Midtrans)
+
+#### 6.1 Checkout (Buat Order & Snap Token)
+
+Memerlukan `Authorization: Bearer {token}`.
+
+```http
+POST /api/v1/payments/checkout
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "pricing_plan_id": 1
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Snap token berhasil dibuat.",
+  "data": {
+    "order_id": 1,
+    "order_code": "ORD-1234567890",
+    "snap_token": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "redirect_url": "https://app.sandbox.midtrans.com/snap/v3/redirection/a1b2..."
+  }
+}
+```
+
+#### 6.2 Detail Order & Payment
+
+Memerlukan `Authorization: Bearer {token}`.
+
+```http
+GET /api/v1/payments/{order_id}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Detail payment berhasil diambil.",
+  "data": {
+    "order": {
+      "id": 1,
+      "order_code": "ORD-1234567890",
+      "amount": 50000,
+      "image_quota": 50,
+      "status": "paid",
+      "paid_at": "2026-06-21T06:00:00.000000Z"
+    },
+    "payment": {
+      "provider": "midtrans",
+      "transaction_id": "trx-123",
+      "payment_type": "gopay",
+      "transaction_status": "settlement",
+      "fraud_status": "accept"
+    }
+  }
+}
+```
+
+#### 6.3 Webhook Midtrans (Notification)
+
+Endpoint ini dipanggil oleh server Midtrans (Public/Tanpa Auth).
+
+```http
+POST /api/v1/payments/midtrans/notification
+Content-Type: application/json
+
+{
+  "transaction_time": "2026-06-21 13:00:00",
+  "transaction_status": "settlement",
+  "transaction_id": "trx-123",
+  "status_message": "midtrans payment notification",
+  "status_code": "200",
+  "signature_key": "...",
+  "payment_type": "gopay",
+  "order_id": "ORD-1234567890",
+  "merchant_id": "M012345",
+  "gross_amount": "50000.00",
+  "fraud_status": "accept",
+  "currency": "IDR"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Notification processed.",
+  "data": null
+}
+```
+
 ---
 
 ## Panduan Integrasi Frontend (React)
@@ -1007,6 +1108,175 @@ User mencoba mengakses chat milik user lain:
 | `metadata`        | json (nullable)                   | Data tambahan opsional         |
 | `created_at`      | timestamp                         | Waktu dibuat                   |
 | `updated_at`      | timestamp                         | Waktu terakhir diupdate        |
+
+### Tabel `generated_images`
+
+| Kolom             | Tipe                              | Deskripsi                      |
+| ----------------- | --------------------------------- | ------------------------------ |
+| `id`              | bigint (PK)                       | Primary key                    |
+| `user_id`         | bigint (FK)                       | Relasi ke tabel users          |
+| `prompt`          | text                              | Teks prompt                    |
+| `negative_prompt` | text (nullable)                   | Teks negatif prompt            |
+| `image_path`      | string (nullable)                 | Path internal file gambar      |
+| `image_url`       | string (nullable)                 | URL publik gambar              |
+| `provider`        | string                            | AI provider (default: cloudflare)|
+| `model`           | string                            | Model yang digunakan           |
+| `status`          | string                            | Status (processing, completed, failed) |
+| `error_message`   | text (nullable)                   | Pesan error jika gagal         |
+| `quota_refunded`  | boolean                           | Status refund kuota            |
+
+---
+
+## Modul Pembayaran (Midtrans)
+
+Sistem ini mendukung integrasi Midtrans Sandbox untuk menangani pembelian kuota.
+
+### Endpoints Pembayaran
+
+1. **Checkout (Create Order)**
+   - **URL:** `POST /api/v1/payments/checkout`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Body:**
+     ```json
+     {
+       "pricing_plan_id": 1
+     }
+     ```
+   - **Response:**
+     ```json
+     {
+       "success": true,
+       "message": "Checkout berhasil.",
+       "data": {
+         "order_id": 1,
+         "snap_token": "...",
+         "snap_redirect_url": "https://app.sandbox.midtrans.com/snap/v3/redirection/..."
+       }
+     }
+     ```
+
+2. **Cek Status Pesanan**
+   - **URL:** `GET /api/v1/payments/{order_id}`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Response:** Menampilkan detail order beserta status pembayarannya (pending, success, failed, dll).
+
+3. **Webhook Midtrans**
+   - **URL:** `POST /api/v1/payments/midtrans/notification`
+   - **Deskripsi:** Endpoint khusus yang menerima notifikasi asinkron dari Midtrans dan memperbarui status pesanan.
+
+### Testing Midtrans Sandbox
+
+1. Pastikan env terisi:
+   ```env
+   MIDTRANS_IS_PRODUCTION=false
+   MIDTRANS_SERVER_KEY="SB-Mid-server-..."
+   MIDTRANS_CLIENT_KEY="SB-Mid-client-..."
+   ```
+2. Checkout dari aplikasi untuk mendapatkan `snap_redirect_url`.
+3. Buka URL tersebut dan lakukan simulasi pembayaran menggunakan kartu debit/kredit dummy Midtrans atau metode lain yang didukung di Simulator Midtrans.
+4. (Opsional untuk testing webhook lokal): Gunakan Ngrok (`ngrok http 8000`) lalu daftarkan URL Ngrok tersebut di Midtrans Dashboard > Settings > Configuration.
+
+---
+
+## Modul Generate Gambar (Text-to-Image)
+
+Sistem ini memiliki fitur Text-to-Image menggunakan Cloudflare Workers AI. Proses dilakukan secara asynchronous menggunakan queue untuk mencegah timeout API.
+
+### Endpoints Text-to-Image
+
+1. **Request Generate Image**
+   - **URL:** `POST /api/v1/images/generate`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Body:**
+     ```json
+     {
+       "prompt": "A futuristic city with flying cars at sunset",
+       "negative_prompt": "blurry, low quality",
+       "width": 1024,
+       "height": 1024
+     }
+     ```
+   - **Response:**
+     ```json
+     {
+       "success": true,
+       "message": "Generate gambar sedang diproses.",
+       "data": {
+         "id": 12,
+         "prompt": "A futuristic city with flying cars at sunset",
+         "status": "processing",
+         "provider": "cloudflare",
+         "model": "@cf/bytedance/stable-diffusion-xl-lightning",
+         "created_at": "2026-06-21T07:00:00Z"
+       }
+     }
+     ```
+
+2. **Cek Status Gambar**
+   - **URL:** `GET /api/v1/images/{id}/status`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Response:**
+     ```json
+     {
+       "success": true,
+       "message": "Status generate gambar berhasil diambil.",
+       "data": {
+         "id": 12,
+         "status": "completed",
+         "image_url": "http://localhost:8000/storage/generated-images/1/12.png",
+         "error_message": null,
+         "created_at": "2026-06-21T07:00:00Z",
+         "completed_at": "2026-06-21T07:00:05Z",
+         "failed_at": null
+       }
+     }
+     ```
+
+### Testing Cloudflare AI Text-to-Image
+
+1. Pastikan queue worker berjalan: `php artisan queue:work`
+2. Pastikan storage link telah terbuat: `php artisan storage:link`
+3. Pastikan konfigurasi env terisi:
+   ```env
+   CLOUDFLARE_AI_ACCOUNT_ID="your-account-id"
+   CLOUDFLARE_AI_API_TOKEN="your-api-token"
+   CLOUDFLARE_AI_IMAGE_MODEL="@cf/bytedance/stable-diffusion-xl-lightning"
+   ```
+4. Panggil endpoint request generate, catat `id` yang didapat.
+5. Panggil endpoint status check dengan interval tertentu hingga status berubah menjadi `completed` atau `failed`.
+
+---
+
+## Modul Image Gallery
+
+Modul Image Gallery menyediakan endpoint untuk menampilkan, melihat detail, dan menghapus gambar hasil generate milik user.
+
+### Endpoints Image Gallery
+
+1. **Daftar Gallery (List)**
+   - **URL:** `GET /api/v1/images`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Query Parameters (Opsional):**
+     - `page`: Nomor halaman (default: 1)
+     - `per_page`: Jumlah data per halaman (maksimal 50, default: 12)
+     - `search`: Pencarian berdasarkan kata kunci pada prompt
+     - `status`: Filter status (`processing`, `completed`, `failed`)
+     - `date_from` & `date_to`: Filter rentang tanggal pembuatan
+     - `sort_by` & `sort_order`: Pengurutan data (default: `created_at` `desc`)
+   - **Response:**
+     Mengembalikan data hasil generate gambar beserta pagination meta.
+
+2. **Detail Gambar**
+   - **URL:** `GET /api/v1/images/{id}`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Response:**
+     Mengembalikan detail lengkap satu hasil generate gambar.
+
+3. **Hapus Gambar**
+   - **URL:** `DELETE /api/v1/images/{id}`
+   - **Header:** `Authorization: Bearer {token}`
+   - **Deskripsi:** 
+     Menghapus data gambar di database serta menghapus file gambar fisik dari storage jika ada. Data user lain tidak dapat dihapus.
 
 ---
 
