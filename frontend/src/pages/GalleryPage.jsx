@@ -22,6 +22,8 @@ import {
     LuZoomIn,
 } from "react-icons/lu";
 import { getImages, deleteImage } from "../api/imageApi";
+import { GlassCard, Input, Button } from "@glinui/ui";
+import { gooeyToast } from "goey-toast";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -89,15 +91,15 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 md:p-8"
             onClick={onClose}
         >
             <div
-                className="relative bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl max-w-4xl w-full flex flex-col md:flex-row max-h-[90vh]"
+                className="relative bg-[#0A0A09]/95 border border-white/8 rounded-3xl overflow-hidden shadow-2xl max-w-4xl w-full flex flex-col md:flex-row max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Image panel */}
-                <div className="flex-1 bg-slate-950 flex items-center justify-center min-h-64 md:min-h-0 overflow-hidden">
+                <div className="flex-1 bg-neutral-950 flex items-center justify-center min-h-64 md:min-h-0 overflow-hidden">
                     {image.image_url ? (
                         <img
                             src={image.image_url}
@@ -105,8 +107,8 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
                             className="w-full h-full object-contain max-h-[60vh] md:max-h-[80vh]"
                         />
                     ) : (
-                        <div className="flex flex-col items-center justify-center gap-3 p-8 text-slate-500">
-                            <LuClock className="text-4xl animate-pulse text-amber-400" />
+                        <div className="flex flex-col items-center justify-center gap-3 p-8 text-neutral-500">
+                            <LuClock className="text-4xl animate-pulse text-amber-500" />
                             <p className="font-sans text-sm text-center">
                                 {image.status === "failed"
                                     ? "Generation failed"
@@ -117,14 +119,14 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
                 </div>
 
                 {/* Info panel */}
-                <div className="w-full md:w-80 shrink-0 flex flex-col overflow-y-auto">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-                        <h3 className="font-montserrat font-bold text-slate-900 dark:text-slate-100 text-sm">
+                <div className="w-full md:w-80 shrink-0 flex flex-col overflow-y-auto bg-[#0A0A09]/50">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+                        <h3 className="font-sans font-bold text-white text-sm">
                             Detail Gambar
                         </h3>
                         <button
                             onClick={onClose}
-                            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="flex items-center justify-center w-8 h-8 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
                         >
                             <LuX className="text-base" />
                         </button>
@@ -133,14 +135,14 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
                     <div className="flex-1 p-5 space-y-4 overflow-y-auto">
                         {/* Status */}
                         <div>
-                            <p className="text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Status</p>
+                            <p className="text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">Status</p>
                             <StatusBadge status={image.status} />
                         </div>
 
                         {/* Prompt */}
                         <div>
-                            <p className="text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Prompt</p>
-                            <p className="font-sans text-sm text-slate-800 dark:text-slate-200 leading-relaxed bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
+                            <p className="text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">Prompt</p>
+                            <p className="font-sans text-sm text-neutral-200 leading-relaxed bg-[#161615]/80 border border-white/8 rounded-xl p-3">
                                 {image.prompt}
                             </p>
                         </div>
@@ -148,8 +150,8 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
                         {/* Dimensions */}
                         {(image.width || image.height) && (
                             <div>
-                                <p className="text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Ukuran</p>
-                                <p className="font-mono text-sm text-slate-700 dark:text-slate-300">
+                                <p className="text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">Ukuran</p>
+                                <p className="font-mono text-sm text-neutral-300">
                                     {image.width} × {image.height}px
                                 </p>
                             </div>
@@ -157,16 +159,16 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
 
                         {/* Dates */}
                         <div>
-                            <p className="text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Dibuat</p>
-                            <p className="font-sans text-sm text-slate-700 dark:text-slate-300">
+                            <p className="text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">Dibuat</p>
+                            <p className="font-sans text-sm text-neutral-300">
                                 {formatDate(image.created_at)}
                             </p>
                         </div>
 
                         {image.completed_at && (
                             <div>
-                                <p className="text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Selesai</p>
-                                <p className="font-sans text-sm text-slate-700 dark:text-slate-300">
+                                <p className="text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">Selesai</p>
+                                <p className="font-sans text-sm text-neutral-300">
                                     {formatDate(image.completed_at)}
                                 </p>
                             </div>
@@ -174,10 +176,10 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
 
                         {/* Error message */}
                         {image.status === "failed" && image.error_message && (
-                            <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-xl p-3">
+                            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
                                 <div className="flex items-start gap-2">
                                     <LuCircleAlert className="text-rose-500 text-sm shrink-0 mt-0.5" />
-                                    <p className="font-sans text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
+                                    <p className="font-sans text-xs text-rose-300 leading-relaxed">
                                         {image.error_message}
                                     </p>
                                 </div>
@@ -186,14 +188,14 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
                     </div>
 
                     {/* Actions */}
-                    <div className="shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                    <div className="shrink-0 p-4 border-t border-white/8 flex gap-2 bg-[#0A0A09]">
                         {image.image_url && (
                             <a
                                 href={image.image_url}
                                 download={`generated-${image.id}.png`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-sans font-medium hover:bg-violet-700 transition-colors"
+                                className="flex-1 flex items-center justify-center gap-2 h-10 px-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-black text-sm font-sans font-semibold hover:from-amber-400 hover:to-orange-400 transition-all"
                             >
                                 <LuDownload className="text-sm" />
                                 Download
@@ -202,7 +204,7 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
                         <button
                             onClick={() => onDelete(image.id)}
                             disabled={isDeleting}
-                            className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-sm font-sans font-medium hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors disabled:opacity-50"
+                            className="flex items-center justify-center gap-2 w-12 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-sans font-medium hover:bg-rose-500/20 transition-colors disabled:opacity-50"
                         >
                             {isDeleting ? (
                                 <LuLoader className="text-sm animate-spin" />
@@ -221,10 +223,10 @@ function Lightbox({ image, onClose, onDelete, isDeleting }) {
 
 function ImageCard({ image, onSelect, onDelete, isDeleting }) {
     return (
-        <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 hover:border-violet-300 dark:hover:border-violet-800 transition-all duration-300">
+        <GlassCard className="group relative overflow-hidden transition-all duration-300 hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.05)]">
             {/* Image thumbnail */}
             <div
-                className="relative aspect-square bg-slate-100 dark:bg-slate-800 cursor-pointer overflow-hidden"
+                className="relative aspect-square bg-neutral-950 cursor-pointer overflow-hidden"
                 onClick={() => onSelect(image)}
             >
                 {image.image_url ? (
@@ -236,32 +238,32 @@ function ImageCard({ image, onSelect, onDelete, isDeleting }) {
                             loading="lazy"
                         />
                         {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2">
-                                <LuZoomIn className="text-sm" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 bg-neutral-900/80 border border-white/10 backdrop-blur-sm text-white rounded-full px-4 py-2">
+                                <LuZoomIn className="text-sm text-amber-500" />
                                 <span className="text-xs font-sans font-medium">Lihat Detail</span>
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-neutral-950">
                         {image.status === "processing" ? (
                             <>
                                 <div className="relative">
-                                    <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                                         <LuSparkles className="text-amber-500 text-xl animate-pulse" />
                                     </div>
                                 </div>
-                                <p className="font-sans text-xs text-slate-400 text-center px-3">
+                                <p className="font-sans text-xs text-neutral-400 text-center px-3">
                                     Generating...
                                 </p>
                             </>
                         ) : (
                             <>
-                                <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/20 flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
                                     <LuCircleX className="text-rose-500 text-xl" />
                                 </div>
-                                <p className="font-sans text-xs text-slate-400 text-center px-3">
+                                <p className="font-sans text-xs text-neutral-400 text-center px-3">
                                     Failed
                                 </p>
                             </>
@@ -276,12 +278,12 @@ function ImageCard({ image, onSelect, onDelete, isDeleting }) {
             </div>
 
             {/* Footer */}
-            <div className="p-3">
-                <p className="font-sans text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed mb-2">
+            <div className="p-3 bg-[#0A0A09]/40 border-t border-white/5">
+                <p className="font-sans text-xs text-neutral-300 line-clamp-2 leading-relaxed mb-2">
                     {image.prompt}
                 </p>
                 <div className="flex items-center justify-between">
-                    <span className="font-sans text-xs text-slate-400 dark:text-slate-500">
+                    <span className="font-sans text-[11px] text-neutral-500">
                         {formatDate(image.created_at).split(",")[0]}
                     </span>
                     <div className="flex items-center gap-1">
@@ -292,7 +294,7 @@ function ImageCard({ image, onSelect, onDelete, isDeleting }) {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                                className="flex items-center justify-center w-7 h-7 rounded-lg text-neutral-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
                                 title="Download"
                             >
                                 <LuDownload className="text-xs" />
@@ -304,7 +306,7 @@ function ImageCard({ image, onSelect, onDelete, isDeleting }) {
                                 onDelete(image.id);
                             }}
                             disabled={isDeleting}
-                            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors disabled:opacity-50"
+                            className="flex items-center justify-center w-7 h-7 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-50"
                             title="Hapus"
                         >
                             {isDeleting ? (
@@ -316,7 +318,7 @@ function ImageCard({ image, onSelect, onDelete, isDeleting }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </GlassCard>
     );
 }
 
@@ -399,8 +401,9 @@ export default function GalleryPage() {
             setImages((prev) => prev.filter((img) => img.id !== id));
             if (selectedImage?.id === id) setSelectedImage(null);
             setConfirmDeleteId(null);
+            gooeyToast.success("Gambar berhasil dihapus.");
         } catch (err) {
-            alert(err.response?.data?.message || "Gagal menghapus gambar.");
+            gooeyToast.error(err.response?.data?.message || "Gagal menghapus gambar.");
         } finally {
             setDeletingId(null);
         }
@@ -422,65 +425,66 @@ export default function GalleryPage() {
 
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="w-full min-h-screen">
+        <div className="w-full min-h-screen bg-[#0A0A09]">
             {/* ── Hero Header ── */}
-            <div className="relative overflow-hidden rounded-3xl mb-8 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-800 p-8 md:p-10 shadow-2xl shadow-purple-500/20">
-                <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/5 blur-3xl" />
-                <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
-                <div className="absolute top-6 right-24 w-40 h-40 rounded-full bg-pink-500/15 blur-2xl" />
+            <GlassCard className="relative overflow-hidden mb-8 p-8 md:p-10 animate-fade-in">
+                {/* Glowing Orbs */}
+                <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-amber-500/10 blur-3xl" />
+                <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-orange-500/10 blur-3xl" />
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm">
-                                <LuImages className="text-white text-xl" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                                <LuImages className="text-amber-500 text-xl" />
                             </div>
-                            <span className="text-purple-200 font-sans text-sm font-semibold uppercase tracking-widest">
+                            <span className="text-neutral-400 font-sans text-xs font-semibold uppercase tracking-widest">
                                 Image Gallery
                             </span>
                         </div>
-                        <h1 className="font-montserrat font-bold text-3xl md:text-4xl text-white mb-2">
+                        <h1 className="font-sans font-bold text-3xl md:text-4xl text-white mb-2">
                             Galeri Gambar
-                            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-pink-300 to-yellow-200">
+                            <span className="block bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 bg-clip-text text-transparent">
                                 hasil generate kamu
                             </span>
                         </h1>
-                        <p className="font-sans text-purple-200 text-sm md:text-base max-w-md">
+                        <p className="font-sans text-neutral-400 text-sm max-w-md">
                             Lihat semua gambar yang pernah kamu buat dengan AI. Cari, filter, dan kelola koleksi kamu.
                         </p>
                     </div>
-                    <div className="flex gap-4 md:gap-6">
+                    <div className="flex gap-6">
                         {[
                             { val: meta?.total ?? "—", label: "Total Gambar" },
                             { val: images.filter((i) => i.status === "completed").length, label: "Selesai" },
                         ].map((s) => (
                             <div key={s.label} className="text-center">
-                                <p className="font-montserrat font-bold text-2xl text-white">{s.val}</p>
-                                <p className="font-sans text-xs text-purple-300">{s.label}</p>
+                                <p className="font-sans font-bold text-2xl text-white">{s.val}</p>
+                                <p className="font-sans text-xs text-neutral-500">{s.label}</p>
                             </div>
                         ))}
                     </div>
                 </div>
-            </div>
+            </GlassCard>
 
             {/* ── Toolbar ── */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 {/* Search */}
                 <div className="relative flex-1">
-                    <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
-                    <input
+                    <LuSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-base z-10" />
+                    <Input
                         type="text"
+                        variant="glass"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Cari berdasarkan prompt..."
-                        className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-sans text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all"
+                        className="w-full h-11 pl-11 pr-10 rounded-2xl focus-visible:ring-amber-500/30 focus-visible:border-amber-500/60 transition-all text-white placeholder-neutral-500 bg-none bg-[#161615]/45 border-white/8 backdrop-blur-md"
                     />
                     {search && (
                         <button
                             onClick={() => setSearch("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white transition-colors"
                         >
-                            <LuX className="text-sm" />
+                            <LuX className="text-base" />
                         </button>
                     )}
                 </div>
@@ -488,16 +492,16 @@ export default function GalleryPage() {
                 {/* Filter toggle */}
                 <button
                     onClick={() => setShowFilters((v) => !v)}
-                    className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl border font-sans text-sm font-medium transition-all ${
+                    className={`relative flex items-center gap-2 h-11 px-4 rounded-full border font-sans text-sm font-medium transition-all ${
                         showFilters || activeFilters > 0
-                            ? "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-600 text-violet-700 dark:text-violet-300"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                            : "bg-neutral-900/80 border border-white/8 text-neutral-400 hover:text-white hover:bg-neutral-800"
                     }`}
                 >
                     <LuFilter className="text-sm" />
                     Filter
                     {activeFilters > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-violet-600 text-white text-[10px] font-bold flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[10px] font-bold flex items-center justify-center">
                             {activeFilters}
                         </span>
                     )}
@@ -506,7 +510,7 @@ export default function GalleryPage() {
                 {/* Sort order */}
                 <button
                     onClick={() => setSortOrder((s) => (s === "desc" ? "asc" : "desc"))}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-sans text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                    className="flex items-center gap-2 h-11 px-4 rounded-full border border-white/8 bg-neutral-900/80 font-sans text-sm font-medium text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
                     title={sortOrder === "desc" ? "Terbaru dulu" : "Terlama dulu"}
                 >
                     <LuCalendar className="text-sm" />
@@ -517,27 +521,27 @@ export default function GalleryPage() {
                 <button
                     onClick={() => fetchImages({ page: currentPage, silent: true })}
                     disabled={isRefreshing}
-                    className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
+                    className="flex items-center justify-center w-11 h-11 rounded-full border border-white/8 bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors disabled:opacity-50"
                     title="Refresh"
                 >
                     <LuRefreshCw className={`text-sm ${isRefreshing ? "animate-spin" : ""}`} />
                 </button>
 
                 {/* Go to generate */}
-                <button
+                <Button
                     onClick={() => navigate("/image")}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-sans text-sm font-medium hover:opacity-90 transition-all shadow-lg shadow-purple-500/25"
+                    className="flex items-center gap-2 h-11 px-5 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-sans font-semibold rounded-full border-none shadow-md shadow-amber-500/10 hover:from-amber-400 hover:to-orange-400 transition-all cursor-pointer"
                 >
                     <LuSparkles className="text-sm" />
                     Generate Baru
-                </button>
+                </Button>
             </div>
 
             {/* ── Filter Panel ── */}
             {showFilters && (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 mb-6 shadow-sm space-y-4">
+                <GlassCard className="p-5 mb-6 space-y-4">
                     <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-montserrat font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        <h3 className="font-sans font-semibold text-sm text-white">
                             Filter
                         </h3>
                         {activeFilters > 0 && (
@@ -547,7 +551,7 @@ export default function GalleryPage() {
                                     setDateFrom("");
                                     setDateTo("");
                                 }}
-                                className="text-xs font-sans text-rose-500 hover:text-rose-700 transition-colors"
+                                className="text-xs font-sans text-rose-400 hover:text-rose-300 transition-colors"
                             >
                                 Reset semua
                             </button>
@@ -557,13 +561,13 @@ export default function GalleryPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {/* Status Filter */}
                         <div>
-                            <label className="block text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                            <label className="block text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">
                                 Status
                             </label>
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-sans text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all"
+                                className="w-full bg-[#161615]/60 border border-white/8 backdrop-blur-md rounded-2xl px-3 py-2 font-sans text-sm text-white focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="completed">Completed</option>
@@ -574,31 +578,31 @@ export default function GalleryPage() {
 
                         {/* Date From */}
                         <div>
-                            <label className="block text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                            <label className="block text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">
                                 Dari Tanggal
                             </label>
                             <input
                                 type="date"
                                 value={dateFrom}
                                 onChange={(e) => setDateFrom(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-sans text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all"
+                                className="w-full bg-[#161615]/60 border border-white/8 backdrop-blur-md rounded-2xl px-3 py-2 font-sans text-sm text-white focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all"
                             />
                         </div>
 
                         {/* Date To */}
                         <div>
-                            <label className="block text-xs font-sans text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                            <label className="block text-xs font-sans text-neutral-500 mb-1.5 uppercase tracking-wider">
                                 Sampai Tanggal
                             </label>
                             <input
                                 type="date"
                                 value={dateTo}
                                 onChange={(e) => setDateTo(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-sans text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all"
+                                className="w-full bg-[#161615]/60 border border-white/8 backdrop-blur-md rounded-2xl px-3 py-2 font-sans text-sm text-white focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all"
                             />
                         </div>
                     </div>
-                </div>
+                </GlassCard>
             )}
 
             {/* ── Content ── */}
@@ -606,81 +610,81 @@ export default function GalleryPage() {
                 // Loading skeleton
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {Array.from({ length: 12 }).map((_, i) => (
-                        <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                            <div className="aspect-square bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                        <GlassCard key={i} className="overflow-hidden">
+                            <div className="aspect-square bg-neutral-900 animate-pulse border-b border-white/5" />
                             <div className="p-3 space-y-2">
-                                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded animate-pulse w-full" />
-                                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded animate-pulse w-3/4" />
+                                <div className="h-3 bg-neutral-800 rounded animate-pulse w-full" />
+                                <div className="h-3 bg-neutral-800 rounded animate-pulse w-3/4" />
                             </div>
-                        </div>
+                        </GlassCard>
                     ))}
                 </div>
             ) : error ? (
                 // Error state
-                <div className="flex flex-col items-center justify-center min-h-64 text-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/20 flex items-center justify-center">
+                <GlassCard className="flex flex-col items-center justify-center min-h-64 text-center gap-4 py-8">
+                    <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
                         <LuCircleAlert className="text-rose-500 text-3xl" />
                     </div>
                     <div>
-                        <p className="font-montserrat font-bold text-slate-900 dark:text-slate-100 mb-1">
+                        <p className="font-sans font-bold text-white mb-1">
                             Terjadi Kesalahan
                         </p>
-                        <p className="font-sans text-sm text-slate-500 dark:text-slate-400">{error}</p>
+                        <p className="font-sans text-sm text-neutral-400">{error}</p>
                     </div>
-                    <button
+                    <Button
                         onClick={() => fetchImages({ page: 1 })}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-sans font-medium hover:bg-violet-700 transition-colors"
+                        className="flex items-center gap-2 h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-sans font-semibold rounded-full border-none shadow-md hover:from-amber-400 hover:to-orange-400 transition-all cursor-pointer"
                     >
                         <LuRefreshCw className="text-sm" />
                         Coba Lagi
-                    </button>
-                </div>
+                    </Button>
+                </GlassCard>
             ) : images.length === 0 ? (
                 // Empty state
-                <div className="flex flex-col items-center justify-center min-h-64 text-center gap-6 py-16">
+                <GlassCard className="flex flex-col items-center justify-center min-h-64 text-center gap-6 py-16">
                     <div className="relative">
-                        <div className="flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-500/10 dark:to-purple-500/10">
-                            <LuImage className="text-purple-500 text-4xl" />
+                        <div className="flex items-center justify-center w-24 h-24 rounded-3xl bg-amber-500/10 border border-amber-500/20">
+                            <LuImage className="text-amber-500 text-4xl" />
                         </div>
-                        <div className="absolute -top-2 -right-2 flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg">
-                            <LuSparkles className="text-white text-sm" />
+                        <div className="absolute -top-2 -right-2 flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg text-black">
+                            <LuSparkles className="text-sm" />
                         </div>
                     </div>
                     <div>
-                        <h2 className="font-montserrat font-bold text-xl text-slate-900 dark:text-slate-50 mb-2">
+                        <h2 className="font-sans font-bold text-xl text-white mb-2">
                             {search || statusFilter || dateFrom || dateTo
                                 ? "Tidak ada hasil ditemukan"
                                 : "Galeri masih kosong"}
                         </h2>
-                        <p className="font-sans text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                        <p className="font-sans text-sm text-neutral-400 max-w-xs mx-auto">
                             {search || statusFilter || dateFrom || dateTo
                                 ? "Coba ubah pencarian atau filter kamu."
                                 : "Belum ada gambar yang di-generate. Mulai buat gambar pertama kamu!"}
                         </p>
                     </div>
                     {!search && !statusFilter && !dateFrom && !dateTo && (
-                        <button
+                        <Button
                             onClick={() => navigate("/image")}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-sans text-sm font-medium hover:opacity-90 transition-all shadow-lg shadow-purple-500/25"
+                            className="flex items-center gap-2 h-11 px-6 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-sans font-semibold rounded-full border-none shadow-md hover:from-amber-400 hover:to-orange-400 transition-all cursor-pointer"
                         >
                             <LuSparkles className="text-sm" />
                             Generate Gambar Pertama
-                        </button>
+                        </Button>
                     )}
-                </div>
+                </GlassCard>
             ) : (
                 <>
                     {/* Results info */}
                     <div className="flex items-center justify-between mb-4">
-                        <p className="font-sans text-sm text-slate-500 dark:text-slate-400">
+                        <p className="font-sans text-sm text-neutral-400">
                             Menampilkan{" "}
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            <span className="font-semibold text-white">
                                 {images.length}
                             </span>{" "}
                             {meta?.total ? `dari ${meta.total}` : ""} gambar
                         </p>
                         {isRefreshing && (
-                            <div className="flex items-center gap-1.5 text-violet-500 text-xs font-sans">
+                            <div className="flex items-center gap-1.5 text-amber-500 text-xs font-sans">
                                 <LuLoader className="animate-spin text-xs" />
                                 Memperbarui...
                             </div>
@@ -706,7 +710,7 @@ export default function GalleryPage() {
                             <button
                                 onClick={() => goToPage(currentPage - 1)}
                                 disabled={currentPage <= 1}
-                                className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="flex items-center justify-center w-10 h-10 rounded-full border border-white/8 bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 <LuChevronLeft className="text-base" />
                             </button>
@@ -729,7 +733,7 @@ export default function GalleryPage() {
                                     p === "..." ? (
                                         <span
                                             key={`ellipsis-${i}`}
-                                            className="w-9 h-9 flex items-center justify-center text-slate-400 font-sans text-sm"
+                                            className="w-10 h-10 flex items-center justify-center text-neutral-500 font-sans text-sm"
                                         >
                                             …
                                         </span>
@@ -737,10 +741,10 @@ export default function GalleryPage() {
                                         <button
                                             key={p}
                                             onClick={() => goToPage(p)}
-                                            className={`w-9 h-9 rounded-xl font-sans text-sm font-medium transition-all ${
+                                            className={`w-10 h-10 rounded-full font-sans text-sm font-semibold transition-all cursor-pointer ${
                                                 p === currentPage
-                                                    ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
-                                                    : "border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/10"
+                                                    : "border border-white/8 bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800"
                                             }`}
                                         >
                                             {p}
@@ -751,7 +755,7 @@ export default function GalleryPage() {
                             <button
                                 onClick={() => goToPage(currentPage + 1)}
                                 disabled={currentPage >= meta.last_page}
-                                className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="flex items-center justify-center w-10 h-10 rounded-full border border-white/8 bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 <LuChevronRight className="text-base" />
                             </button>
@@ -772,28 +776,28 @@ export default function GalleryPage() {
 
             {/* ── Delete Confirm Dialog ── */}
             {confirmDeleteId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/30 mx-auto mb-4">
-                            <LuTrash2 className="text-rose-500 text-xl" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                    <GlassCard className="p-6 max-w-sm w-full shadow-2xl border border-white/8 bg-[#0A0A09]/95 text-center">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 mx-auto mb-4">
+                            <LuTrash2 className="text-xl" />
                         </div>
-                        <h3 className="font-montserrat font-bold text-lg text-slate-900 dark:text-slate-100 text-center mb-2">
+                        <h3 className="font-sans font-bold text-lg text-white mb-2">
                             Hapus Gambar?
                         </h3>
-                        <p className="font-sans text-sm text-slate-500 dark:text-slate-400 text-center mb-6">
+                        <p className="font-sans text-sm text-neutral-400 mb-6">
                             Gambar akan dihapus permanen beserta filenya. Tindakan ini tidak bisa dibatalkan.
                         </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setConfirmDeleteId(null)}
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-sans text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                className="flex-1 h-10 rounded-full border border-white/8 bg-neutral-900/80 text-neutral-300 font-sans text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer"
                             >
                                 Batal
                             </button>
                             <button
                                 onClick={() => handleDelete(confirmDeleteId)}
                                 disabled={!!deletingId}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-sans text-sm font-medium hover:bg-rose-700 transition-colors disabled:opacity-60"
+                                className="flex-1 flex items-center justify-center gap-2 h-10 rounded-full bg-rose-600 text-white font-sans text-sm font-medium hover:bg-rose-500 transition-colors disabled:opacity-60 cursor-pointer"
                             >
                                 {deletingId ? (
                                     <LuLoader className="animate-spin text-sm" />
@@ -803,7 +807,7 @@ export default function GalleryPage() {
                                 Hapus
                             </button>
                         </div>
-                    </div>
+                    </GlassCard>
                 </div>
             )}
         </div>

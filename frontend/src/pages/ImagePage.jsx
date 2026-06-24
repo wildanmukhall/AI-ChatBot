@@ -13,8 +13,10 @@ import {
     LuCopy,
     LuCheck,
 } from "react-icons/lu";
+import { GlassCard, Button } from "@glinui/ui";
+import { gooeyToast } from 'goey-toast';
 
-// Style presets Freepik-style
+// Style presets
 const STYLE_PRESETS = [
     { id: "photorealistic", label: "Photorealistic", emoji: "📸" },
     { id: "digital-art", label: "Digital Art", emoji: "🎨" },
@@ -25,8 +27,6 @@ const STYLE_PRESETS = [
     { id: "3d-render", label: "3D Render", emoji: "🧊" },
     { id: "cinematic", label: "Cinematic", emoji: "🎬" },
 ];
-
-
 
 const PROMPT_SUGGESTIONS = [
     "A futuristic city at sunset with flying cars and neon lights",
@@ -59,16 +59,13 @@ export default function ImagePage() {
         if (!prompt.trim() || isGenerating) return;
 
         if (quotaRemaining !== null && quotaRemaining <= 0) {
-            if (confirm('Kuota generate gambar habis! Buka halaman Profil untuk beli kuota?')) {
-                navigate('/profile');
-            }
+            gooeyToast.error('Kuota generate gambar habis! Silakan tambah kuota di profil Anda.');
             return;
         }
 
         setIsGenerating(true);
         setGeneratingStatus("Submitting your request...");
         try {
-            
             const styleLabel = STYLE_PRESETS.find((s) => s.id === selectedStyle)?.label;
             const finalPrompt = selectedStyle !== "photorealistic" ? `${prompt}, ${styleLabel} style` : prompt;
             
@@ -106,7 +103,7 @@ export default function ImagePage() {
             }
 
             if (!finalImageUrl) {
-                throw new Error("Generation timed out after 2 minutes. The queue worker may not be running.");
+                throw new Error("Generation timed out after 2 minutes.");
             }
 
             const newImage = {
@@ -121,18 +118,19 @@ export default function ImagePage() {
             setActiveImage(newImage);
             setIsGenerating(false);
             decrementQuota();
+            gooeyToast.success('Gambar berhasil di-generate!');
         } catch (error) {
             console.error(error);
             const msg = error.message || error.response?.data?.message || "Failed to generate image.";
-            alert(msg);
+            gooeyToast.error(msg);
             setIsGenerating(false);
         }
     };
 
-
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(prompt);
         setCopiedPrompt(true);
+        gooeyToast.success('Prompt disalin ke clipboard!');
         setTimeout(() => setCopiedPrompt(false), 2000);
     };
 
@@ -141,53 +139,51 @@ export default function ImagePage() {
     return (
         <div className="w-full min-h-screen">
             {/* ── Hero header ── */}
-            <div className="relative overflow-hidden rounded-3xl mb-8 bg-linear-to-br from-violet-600 via-purple-600 to-indigo-600 p-8 shadow-2xl shadow-purple-500/20">
-                {/* Decorative blobs */}
-                <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
-                <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
-                <div className="absolute top-8 right-8 w-32 h-32 rounded-full bg-pink-500/20 blur-2xl" />
+            <GlassCard className="relative overflow-hidden mb-8 p-8 border border-white/8 shadow-2xl shadow-black/80 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
+                {/* Glowing Orbs */}
+                <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-amber-500/10 blur-3xl" />
+                <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-orange-500/10 blur-3xl" />
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm">
-                                <LuPenTool className="text-white text-xl" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
+                                <LuPenTool className="text-amber-500 text-xl" />
                             </div>
-                            <span className="text-purple-200 font-sans text-sm font-semibold uppercase tracking-widest">
+                            <span className="text-neutral-400 font-sans text-xs font-semibold uppercase tracking-widest">
                                 AI Image Generator
                             </span>
                         </div>
-                        <h1 className="font-montserrat font-bold text-3xl md:text-4xl text-white mb-2">
-                            Turn your ideas into
-                            <span className="block bg-clip-text text-transparent bg-linear-to-r from-pink-300 to-yellow-200">
-                                stunning visuals
+                        <h1 className="font-sans font-bold text-3xl md:text-4xl text-white mb-2">
+                            Ubah Ide Anda Menjadi
+                            <span className="block bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                                Visual yang Memukau
                             </span>
                         </h1>
-                        <p className="font-sans text-purple-200 text-sm md:text-base max-w-md">
-                            Describe anything and our AI will bring it to life
-                            in seconds. Powered by Gemini AI.
+                        <p className="font-sans text-neutral-400 text-sm max-w-md leading-relaxed">
+                            Jelaskan apa yang ingin Anda lihat dan AI kami akan mewujudkannya dalam hitungan detik. Didukung oleh Gemini AI.
                         </p>
                     </div>
 
                     {/* Quota indicator */}
-                    <div className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 shadow-xl">
-                        <LuZap className="text-yellow-300 text-2xl" />
+                    <div className="shrink-0 flex items-center gap-3 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 shadow-md">
+                        <LuZap className="text-amber-500 text-2xl animate-pulse" />
                         <div className="flex flex-col">
-                            <span className="font-montserrat font-bold text-2xl text-white leading-none">
+                            <span className="font-sans font-extrabold text-2xl text-white leading-none">
                                 {quotaRemaining ?? '...'}
                             </span>
-                            <span className="font-sans text-xs text-purple-200">kuota tersisa</span>
+                            <span className="font-sans text-xs text-neutral-400">kuota tersisa</span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </GlassCard>
 
             <div className="flex flex-col xl:flex-row gap-6">
                 {/* ── LEFT: Controls ── */}
                 <div className="xl:w-96 shrink-0 space-y-5">
                     {/* Prompt form */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                        <label className="block font-montserrat font-semibold text-sm text-slate-700 dark:text-slate-300 mb-3">
+                    <GlassCard className="p-5">
+                        <label className="block font-sans font-semibold text-sm text-white mb-3">
                             Describe your image
                         </label>
                         <form onSubmit={handleGenerate} className="space-y-3">
@@ -197,13 +193,13 @@ export default function ImagePage() {
                                     onChange={(e) => setPrompt(e.target.value)}
                                     placeholder="A majestic lion standing on a cliff at sunrise, cinematic lighting, ultra detailed..."
                                     rows={4}
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 font-sans text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all resize-none"
+                                    className="w-full bg-none bg-[#161615]/45 border border-white/8 backdrop-blur-md rounded-2xl px-4 py-3 font-sans text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/60 transition-all resize-none"
                                 />
                                 {prompt && (
                                     <button
                                         type="button"
                                         onClick={handleCopyPrompt}
-                                        className="absolute bottom-3 right-3 flex items-center justify-center w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                        className="absolute bottom-3 right-3 flex items-center justify-center w-7 h-7 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer border border-white/5"
                                     >
                                         {copiedPrompt ? (
                                             <LuCheck className="text-sm text-emerald-500" />
@@ -213,10 +209,10 @@ export default function ImagePage() {
                                     </button>
                                 )}
                             </div>
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={!prompt.trim() || isGenerating}
-                                className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-violet-600 to-purple-600 text-white rounded-xl py-3 font-sans font-semibold text-sm hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black rounded-xl py-3 font-sans font-semibold text-sm transition-all border-none shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 {isGenerating ? (
                                     <>
@@ -229,13 +225,13 @@ export default function ImagePage() {
                                         Generate Image
                                     </>
                                 )}
-                            </button>
+                            </Button>
                         </form>
-                    </div>
+                    </GlassCard>
 
                     {/* Style presets */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                        <p className="font-montserrat font-semibold text-sm text-slate-700 dark:text-slate-300 mb-3">
+                    <GlassCard className="p-5">
+                        <p className="font-sans font-semibold text-sm text-white mb-3">
                             Style
                         </p>
                         <div className="grid grid-cols-2 gap-2">
@@ -243,10 +239,10 @@ export default function ImagePage() {
                                 <button
                                     key={style.id}
                                     onClick={() => setSelectedStyle(style.id)}
-                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl font-sans text-sm font-medium transition-all border ${
+                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl font-sans text-sm font-medium transition-all border cursor-pointer ${
                                         selectedStyle === style.id
-                                            ? "bg-purple-50 dark:bg-purple-500/10 border-purple-300 dark:border-purple-500/40 text-purple-700 dark:text-purple-300"
-                                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                                            ? "bg-amber-500/10 border-amber-500/40 text-amber-500"
+                                            : "border-white/5 text-neutral-400 hover:bg-white/5 hover:text-white"
                                     }`}
                                 >
                                     <span>{style.emoji}</span>
@@ -254,15 +250,13 @@ export default function ImagePage() {
                                 </button>
                             ))}
                         </div>
-                    </div>
-
-
+                    </GlassCard>
 
                     {/* Prompt suggestions */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+                    <GlassCard className="p-5">
                         <div className="flex items-center gap-2 mb-3">
                             <LuZap className="text-amber-500 text-sm" />
-                            <p className="font-montserrat font-semibold text-sm text-slate-700 dark:text-slate-300">
+                            <p className="font-sans font-semibold text-sm text-white">
                                 Prompt Ideas
                             </p>
                         </div>
@@ -271,13 +265,13 @@ export default function ImagePage() {
                                 <button
                                     key={i}
                                     onClick={() => handleSuggestion(s)}
-                                    className="w-full text-left px-3 py-2 rounded-xl font-sans text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                                    className="w-full text-left px-3 py-2 rounded-xl font-sans text-xs text-neutral-400 hover:bg-white/5 hover:text-white transition-colors border border-transparent hover:border-white/10 cursor-pointer"
                                 >
                                     {s}
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </GlassCard>
                 </div>
 
                 {/* ── RIGHT: Gallery ── */}
@@ -286,8 +280,8 @@ export default function ImagePage() {
                         /* Loading skeleton */
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 mb-4">
-                                <LuLoader className="text-purple-500 text-xl animate-spin" />
-                                <span className="font-sans text-sm text-slate-500">
+                                <LuLoader className="text-amber-500 text-xl animate-spin" />
+                                <span className="font-sans text-sm text-neutral-400">
                                     {generatingStatus}
                                 </span>
                             </div>
@@ -295,7 +289,7 @@ export default function ImagePage() {
                                 {Array.from({ length: 4 }).map((_, i) => (
                                     <div
                                         key={i}
-                                        className="rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse"
+                                        className="rounded-2xl bg-neutral-900/40 border border-white/5 animate-pulse"
                                         style={{ aspectRatio: "1 / 1" }}
                                     />
                                 ))}
@@ -305,26 +299,25 @@ export default function ImagePage() {
                         /* Empty state */
                         <div className="flex flex-col items-center justify-center h-full min-h-96 text-center">
                             <div className="relative mb-6">
-                                <div className="flex items-center justify-center w-24 h-24 rounded-3xl bg-linear-to-br from-violet-100 to-purple-100 dark:from-violet-500/10 dark:to-purple-500/10">
-                                    <LuImage className="text-purple-500 text-4xl" />
+                                <div className="flex items-center justify-center w-24 h-24 rounded-3xl bg-amber-500/10 border border-amber-500/20">
+                                    <LuImage className="text-amber-500 text-4xl" />
                                 </div>
-                                <div className="absolute -top-2 -right-2 flex items-center justify-center w-8 h-8 rounded-full bg-linear-to-r from-pink-500 to-rose-500 shadow-lg">
-                                    <LuSparkles className="text-white text-sm" />
+                                <div className="absolute -top-2 -right-2 flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg">
+                                    <LuSparkles className="text-black text-sm" />
                                 </div>
                             </div>
-                            <h2 className="font-montserrat font-bold text-xl text-slate-900 dark:text-slate-50 mb-2">
+                            <h2 className="font-sans font-bold text-xl text-white mb-2">
                                 Your canvas awaits
                             </h2>
-                            <p className="font-sans text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-                                Describe your vision on the left and click
-                                Generate to see the magic unfold.
+                            <p className="font-sans text-sm text-neutral-500 max-w-xs leading-relaxed">
+                                Jelasakan visi Anda di panel sebelah kiri dan klik tombol Generate untuk membuat visual yang indah.
                             </p>
                         </div>
                     ) : (
                         <div className="space-y-5">
                             {/* Active / featured image */}
                             {activeImage && (
-                                <div className="relative group rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/10 border border-slate-200 dark:border-slate-800">
+                                <div className="relative group rounded-3xl overflow-hidden shadow-2xl border border-white/8 bg-[#161615]/45 backdrop-blur-md">
                                     <img
                                         src={activeImage.url}
                                         alt={activeImage.prompt}
@@ -332,7 +325,7 @@ export default function ImagePage() {
                                         style={{ maxHeight: "480px" }}
                                     />
                                     {/* Overlay actions */}
-                                    <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-5">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-5">
                                         <div className="flex-1 min-w-0 mr-3">
                                             <p className="font-sans text-sm text-white/90 truncate">
                                                 {activeImage.prompt}
@@ -356,7 +349,7 @@ export default function ImagePage() {
                                                         activeImage.prompt,
                                                     )
                                                 }
-                                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+                                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors cursor-pointer border border-white/10"
                                                 title="Gunakan prompt ini"
                                             >
                                                 <LuRefreshCw className="text-base" />
@@ -364,7 +357,7 @@ export default function ImagePage() {
                                             <a
                                                 href={activeImage.url}
                                                 download="generated-image.jpg"
-                                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+                                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors border border-white/10"
                                                 title="Download"
                                             >
                                                 <LuDownload className="text-base" />
@@ -380,9 +373,9 @@ export default function ImagePage() {
                                     <button
                                         key={img.id}
                                         onClick={() => setActiveImage(img)}
-                                        className={`relative group rounded-2xl overflow-hidden transition-all ${
+                                        className={`relative group rounded-2xl overflow-hidden transition-all cursor-pointer ${
                                             activeImage?.id === img.id
-                                                ? "ring-2 ring-purple-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950"
+                                                ? "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#0A0A09]"
                                                 : "hover:scale-[1.02]"
                                         }`}
                                     >

@@ -6,6 +6,8 @@ import { LuSend, LuLoader, LuBot, LuUser, LuZap } from "react-icons/lu";
 import useQuotaStore from '../stores/quotaStore';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Input, Button } from "@glinui/ui";
+import { gooeyToast } from "goey-toast";
 
 export default function ChatPage() {
     const { sessionId } = useParams();
@@ -59,7 +61,7 @@ export default function ChatPage() {
             await chatApi.sendMessage(sid, { message: msg });
         } catch (err) {
             console.error("Failed to send message:", err);
-            alert(err?.response?.data?.message || "Gagal memproses pesan, silakan coba lagi.");
+            gooeyToast.error(err?.response?.data?.message || "Gagal memproses pesan, silakan coba lagi.");
         } finally {
             queryClient.invalidateQueries({
                 queryKey: ["chat-messages", String(sid)],
@@ -71,7 +73,7 @@ export default function ChatPage() {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-[#0A0A09]">
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
                 {/*
@@ -82,24 +84,23 @@ export default function ChatPage() {
                 <div className="flex flex-col min-h-full">
                     {/* Spacer — mendorong semua konten ke bawah */}
                     <div className="flex-1" />
-                    {/* Messages — space-y-4 di wrapper ini */}
+                    {/* Messages ── space-y-4 di wrapper ini */}
                     <div className="space-y-4">
                         {!sessionId ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                <div className="flex items-center justify-center w-20 h-20 rounded-3xl bg-linear-to-br from-blue-500 to-indigo-500 shadow-xl shadow-indigo-500/25 mb-6">
-                                    <LuBot className="text-white text-4xl" />
+                            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                                <div className="flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-500 shadow-xl shadow-amber-500/20 text-black mb-6 animate-pulse">
+                                    <LuBot className="text-4xl" />
                                 </div>
-                                <h2 className="font-montserrat font-bold text-2xl text-slate-900 dark:text-slate-50 mb-3">
-                                    Mulai Chat dengan AI
+                                <h2 className="font-sans font-bold text-2xl text-white mb-3">
+                                    Mulai Chat dengan <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">AI</span>
                                 </h2>
-                                <p className="font-sans text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                                    Ketik pesan di bawah untuk memulai
-                                    percakapan baru dengan Gemini AI.
+                                <p className="font-sans text-sm text-neutral-400 max-w-sm">
+                                    Ketik pesan di bawah untuk memulai percakapan baru dengan Gemini AI yang super cerdas.
                                 </p>
                             </div>
                         ) : loadingMessages ? (
                             <div className="flex items-center justify-center h-full">
-                                <LuLoader className="text-2xl text-slate-400 animate-spin" />
+                                <LuLoader className="text-2xl text-amber-500 animate-spin" />
                             </div>
                         ) : (
                             <>
@@ -109,15 +110,23 @@ export default function ChatPage() {
                                         className={`flex gap-3 animate-slide-up ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                                     >
                                         {msg.role !== "user" && (
-                                            <div className="shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                                                <LuBot className="text-white text-sm" />
+                                            <div className="shrink-0 w-8 h-8 rounded-full bg-neutral-900/80 border border-amber-500/30 flex items-center justify-center shadow-md">
+                                                <LuBot className="text-amber-500 text-sm" />
                                             </div>
                                         )}
                                         <div
-                                            className={`max-w-[75%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed ${msg.role === "user" ? "bg-linear-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-indigo-500/20" : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200"}`}
+                                            className={`max-w-[75%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed ${
+                                                msg.role === "user"
+                                                    ? "bg-[#161615]/80 border border-amber-500/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.08)]"
+                                                    : "bg-neutral-900/40 backdrop-blur-xl border border-white/8 text-neutral-200 shadow-2xl shadow-black/80"
+                                            }`}
                                         >
                                             <div
-                                                className={`prose prose-sm max-w-none ${msg.role === "user" ? "prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-li:text-white" : "dark:prose-invert"}`}
+                                                className={`prose prose-sm max-w-none ${
+                                                    msg.role === "user"
+                                                        ? "prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-li:text-white"
+                                                        : "dark:prose-invert prose-p:text-neutral-200 prose-headings:text-white prose-strong:text-white"
+                                                }`}
                                             >
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
@@ -127,15 +136,15 @@ export default function ChatPage() {
                                             </div>
                                         </div>
                                         {msg.role === "user" && (
-                                            <div className="shrink-0 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                <LuUser className="text-slate-600 dark:text-slate-300 text-sm" />
+                                            <div className="shrink-0 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                                                <LuUser className="text-amber-400 text-sm" />
                                             </div>
                                         )}
                                     </div>
                                 ))}
                                 {tempUserMessage && (
                                     <div className="flex gap-3 justify-end animate-slide-up">
-                                        <div className="max-w-[75%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed bg-linear-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-indigo-500/20">
+                                        <div className="max-w-[75%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed bg-[#161615]/80 border border-amber-500/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.08)]">
                                             <div className="prose prose-sm prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-li:text-white max-w-none">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
@@ -144,20 +153,20 @@ export default function ChatPage() {
                                                 </ReactMarkdown>
                                             </div>
                                         </div>
-                                        <div className="shrink-0 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                            <LuUser className="text-slate-600 dark:text-slate-300 text-sm" />
+                                        <div className="shrink-0 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                                            <LuUser className="text-amber-400 text-sm" />
                                         </div>
                                     </div>
                                 )}
                                 {isSending && (
                                     <div className="flex gap-3 justify-start animate-slide-up-delayed">
-                                        <div className="shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                                            <LuBot className="text-white text-sm" />
+                                        <div className="shrink-0 w-8 h-8 rounded-full bg-neutral-900/80 border border-amber-500/30 flex items-center justify-center shadow-md">
+                                            <LuBot className="text-amber-500 text-sm" />
                                         </div>
-                                        <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3">
+                                        <div className="bg-neutral-900/40 backdrop-blur-xl border border-white/8 text-neutral-200 rounded-2xl px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                <LuLoader className="text-sm text-slate-400 animate-spin" />
-                                                <span className="font-sans text-sm text-slate-400">
+                                                <LuLoader className="text-sm text-amber-500 animate-spin" />
+                                                <span className="font-sans text-sm text-neutral-400">
                                                     AI sedang berpikir...
                                                 </span>
                                             </div>
@@ -175,9 +184,9 @@ export default function ChatPage() {
             {/* /overflow-y-auto */}
 
             {/* Input area */}
-            <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <div className="flex items-center justify-between max-w-4xl mx-auto mb-2">
-                    <div className="flex items-center gap-1.5 text-xs font-sans text-slate-400">
+            <div className="shrink-0 p-4 border-t border-white/8 bg-[#0A0A09]/60 backdrop-blur-xl z-20">
+                <div className="flex items-center justify-between max-w-4xl mx-auto mb-2 px-1">
+                    <div className="flex items-center gap-1.5 text-xs font-sans text-neutral-400">
                         <LuZap className="text-amber-500" />
                         <span>{quotaRemaining ?? '...'} kuota gambar tersisa</span>
                     </div>
@@ -186,25 +195,26 @@ export default function ChatPage() {
                     onSubmit={handleSend}
                     className="flex gap-3 max-w-4xl mx-auto"
                 >
-                    <input
+                    <Input
                         type="text"
+                        variant="glass"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Ketik pesan kamu..."
                         disabled={isSending}
-                        className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 font-sans text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all disabled:opacity-60"
+                        className="flex-1 h-12 px-4 rounded-2xl focus-visible:ring-amber-500/30 focus-visible:border-amber-500/60 transition-all text-white placeholder-neutral-500 bg-none bg-[#161615]/45 border-white/8 backdrop-blur-md"
                     />
-                    <button
+                    <Button
                         type="submit"
                         disabled={!message.trim() || isSending}
-                        className="flex items-center justify-center w-12 h-12 bg-linear-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:opacity-90 transition-opacity shadow-md shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold rounded-full border-none shadow-md shadow-amber-500/10 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                     >
                         {isSending ? (
                             <LuLoader className="text-lg animate-spin" />
                         ) : (
                             <LuSend className="text-lg" />
                         )}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </div>
