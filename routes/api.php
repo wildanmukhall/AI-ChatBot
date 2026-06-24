@@ -55,6 +55,10 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
     Route::post('/payments/midtrans/notification', [\App\Http\Controllers\Api\PaymentController::class, 'notification'])
         ->name('payments.notification');
 
+    // Pricing Plans (Public — tampilkan di UI tanpa login)
+    Route::get('/pricing-plans', [\App\Http\Controllers\Api\PricingPlanController::class, 'index'])
+        ->name('pricing-plans.index');
+
     // Authentication (PRD Section 9.1)
     Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register'])
@@ -103,6 +107,7 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
 
         // Payments
         Route::post('/payments/checkout', [\App\Http\Controllers\Api\PaymentController::class, 'checkout'])->name('payments.checkout');
+        Route::get('/payments', [\App\Http\Controllers\Api\PaymentController::class, 'index'])->name('payments.index');
         Route::get('/payments/{order}', [\App\Http\Controllers\Api\PaymentController::class, 'show'])->name('payments.show');
 
         // Image Generation

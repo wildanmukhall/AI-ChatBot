@@ -47,6 +47,7 @@ class PaymentService
                 'order_id' => $order->id,
                 'provider' => 'midtrans',
                 'transaction_status' => 'pending',
+                'gross_amount' => $order->amount,
             ]);
 
             DB::commit();

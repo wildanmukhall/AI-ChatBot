@@ -17,7 +17,34 @@ class PaymentController extends Controller
         $this->paymentService = $paymentService;
     }
 
+    /**
+     * GET /api/v1/payments
+     * Riwayat order milik user yang sedang login.
+     */
+    public function index(\Illuminate\Http\Request $request)
+    {
+        try {
+            $user   = $request->user();
+            $orders = \App\Models\Order::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->get(['id', 'order_code', 'amount', 'image_quota', 'status', 'paid_at', 'created_at']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Riwayat order berhasil diambil.',
+                'data'    => $orders,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada sistem.',
+                'errors'  => null,
+            ], 500);
+        }
+    }
+
     public function checkout(CheckoutRequest $request)
+
     {
         try {
             $user = $request->user();

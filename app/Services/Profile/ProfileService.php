@@ -70,25 +70,21 @@ class ProfileService
      */
     public function getStats(User $user): array
     {
-        // Check if chat sessions relation/table exists
+        // ── Chat stats ────────────────────────────────────────────────
         $totalSessions = 0;
+        $totalMessages = 0;
         $totalUserMessages = 0;
         $totalAssistantMessages = 0;
-        $totalMessages = 0;
 
         if (method_exists($user, 'chatSessions')) {
             $totalSessions = $user->chatSessions()->count();
-            
-            // Assuming ChatMessage model exists and we can get stats from chat sessions
-            // Since chat_messages has a chat_session_id, we can query them.
-            // Let's check if the table/relation is accessible
+
             try {
-                $sessionsIds = $user->chatSessions()->pluck('id');
-                if ($sessionsIds->isNotEmpty()) {
-                    // Check if chat_messages table exists by querying
-                    $messages = \App\Models\ChatMessage::whereIn('chat_session_id', $sessionsIds);
-                    $totalMessages = (clone $messages)->count();
-                    $totalUserMessages = (clone $messages)->where('role', 'user')->count();
+                $sessionIds = $user->chatSessions()->pluck('id');
+                if ($sessionIds->isNotEmpty()) {
+                    $messages = \App\Models\ChatMessage::whereIn('chat_session_id', $sessionIds);
+                    $totalMessages       = (clone $messages)->count();
+                    $totalUserMessages   = (clone $messages)->where('role', 'user')->count();
                     $totalAssistantMessages = (clone $messages)->where('role', 'assistant')->count();
                 }
             } catch (\Exception $e) {
@@ -96,22 +92,49 @@ class ProfileService
             }
         }
 
+        // ── Image stats ───────────────────────────────────────────────
+        $totalImages    = 0;
+        $completedImages = 0;
+        $remainingQuota = 0;
+        $totalUsedQuota = 0;
+
+        try {
+            $totalImages     = \App\Models\GeneratedImage::where('user_id', $user->id)->count();
+            $completedImages = \App\Models\GeneratedImage::where('user_id', $user->id)
+                ->where('status', 'completed')
+                ->count();
+            $totalUsedQuota  = $completedImages;
+
+            // Remaining quota = sum of paid orders' image_quota – used
+            $purchasedQuota = \App\Models\Order::where('user_id', $user->id)
+                ->where('status', 'paid')
+                ->sum('image_quota');
+
+            $remainingQuota = max(0, (int) $purchasedQuota - $totalUsedQuota);
+        } catch (\Exception $e) {
+            // Tables may not exist yet
+        }
+
+        // ── Payment stats ─────────────────────────────────────────────
+        $totalOrders     = 0;
+        $totalPaidOrders = 0;
+
+        try {
+            $totalOrders     = \App\Models\Order::where('user_id', $user->id)->count();
+            $totalPaidOrders = \App\Models\Order::where('user_id', $user->id)->where('status', 'paid')->count();
+        } catch (\Exception $e) {
+            // Table may not exist yet
+        }
+
         return [
-            'chat' => [
-                'total_sessions' => $totalSessions,
-                'total_user_messages' => $totalUserMessages,
-                'total_assistant_messages' => $totalAssistantMessages,
-                'total_messages' => $totalMessages,
-            ],
-            'image' => [
-                'total_generated_images' => 0,
-                'remaining_quota' => 0,
-                'total_used_quota' => 0,
-            ],
-            'payment' => [
-                'total_orders' => 0,
-                'total_paid_orders' => 0,
-            ],
+            'total_chat_sessions'   => $totalSessions,
+            'total_messages'        => $totalMessages,
+            'total_images'          => $totalImages,
+            'completed_images'      => $completedImages,
+            'remaining_quota'       => $remainingQuota,
+            'total_used_quota'      => $totalUsedQuota,
+            'total_orders'          => $totalOrders,
+            'total_paid_orders'     => $totalPaidOrders,
         ];
     }
 }
