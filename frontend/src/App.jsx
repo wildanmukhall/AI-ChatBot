@@ -10,6 +10,7 @@ import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import ImagePage from './pages/ImagePage';
 import GalleryPage from './pages/GalleryPage';
+import { GooeyToaster } from 'goey-toast';
 
 function App() {
   const fetchUser = useAuthStore((state) => state.fetchUser);
@@ -21,6 +22,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <GooeyToaster position="top-right" theme="dark" />
       <Routes>
         {/* Auth Routes — Guest only (redirect ke dashboard jika sudah login) */}
         <Route

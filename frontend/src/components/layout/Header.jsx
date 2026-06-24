@@ -14,7 +14,7 @@ export function Header({ onOpenSidebar, onNewChat, sessionTitle }) {
   const user = useAuthStore((state) => state.user);
 
   return (
-    <header className="md:hidden sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+    <header className="md:hidden sticky top-0 z-30 bg-[#0A0A09]/80 backdrop-blur-xl border-b border-white/8">
       <div className="flex items-center justify-between h-14 px-4">
 
         {/* Kiri: Hamburger menu */}
@@ -22,13 +22,13 @@ export function Header({ onOpenSidebar, onNewChat, sessionTitle }) {
           id="mobile-sidebar-toggle"
           onClick={onOpenSidebar}
           aria-label="Buka sidebar"
-          className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-neutral-900/80 border border-white/5 text-neutral-400 hover:text-white transition-colors"
         >
-          <LuMenu className="text-2xl" />
+          <LuMenu className="text-xl" />
         </button>
 
         {/* Tengah: Nama sesi chat */}
-        <span className="flex-1 mx-3 text-sm font-sans font-semibold text-slate-700 dark:text-slate-200 truncate text-center">
+        <span className="flex-1 mx-3 text-sm font-sans font-medium text-neutral-200 truncate text-center uppercase tracking-wide">
           {sessionTitle || user?.name || 'AI ChatBot'}
         </span>
 
@@ -37,9 +37,9 @@ export function Header({ onOpenSidebar, onNewChat, sessionTitle }) {
           id="mobile-new-chat"
           onClick={onNewChat}
           aria-label="Chat baru"
-          className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-neutral-900/80 border border-white/5 text-neutral-400 hover:text-white transition-colors"
         >
-          <LuPlus className="text-2xl" />
+          <LuPlus className="text-xl" />
         </button>
 
       </div>

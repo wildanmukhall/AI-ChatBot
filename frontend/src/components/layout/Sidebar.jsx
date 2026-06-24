@@ -116,9 +116,9 @@ export function Sidebar({ isOpen, onClose }) {
      * Keduanya pakai transition-all → animasi lebar smooth
      */
     const asideClass = [
-        "fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden",
-        "bg-white dark:bg-slate-900",
-        "border-r border-slate-200 dark:border-slate-800",
+        "fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden",
+        "bg-[#161615]/45 backdrop-blur-xl",
+        "border-r border-white/8",
         "transition-all duration-300 ease-in-out",
         // Mobile: lebar penuh, slide
         "w-72",
@@ -129,7 +129,7 @@ export function Sidebar({ isOpen, onClose }) {
     ].join(" ");
 
     const overlayClass = [
-        "fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 transition-opacity md:hidden",
+        "fixed inset-0 bg-black/60 backdrop-blur-md z-20 transition-opacity md:hidden",
         isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
     ].join(" ");
 
@@ -176,17 +176,17 @@ export function Sidebar({ isOpen, onClose }) {
             >
                 {/* ══ LOGO ══════════════════════════════════════════════════ */}
                 <div
-                    className={`shrink-0 h-16 border-b border-slate-200 dark:border-slate-800 ${rowClass("px-5", "px-0")}`}
+                    className={`shrink-0 h-16 border-b border-white/8 ${rowClass("px-5", "px-0")}`}
                 >
-                    <div className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-purple-600 shadow-md shadow-blue-500/25">
-                        <span className="text-white font-montserrat font-extrabold text-xs tracking-tight">
+                    <div className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 shadow-lg shadow-amber-500/20">
+                        <span className="text-white font-sans font-extrabold text-xs tracking-tight">
                             AI
                         </span>
                     </div>
                     <span
-                        className={`font-montserrat font-bold text-xl bg-clip-text text-transparent bg-linear-to-r from-blue-500 to-purple-500 ${shrinkText}`}
+                        className={`font-sans font-bold text-lg bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 bg-clip-text text-transparent ${shrinkText}`}
                     >
-                        AI ChatBot
+                        AI CHAT BOT
                     </span>
                 </div>
 
@@ -210,8 +210,8 @@ export function Sidebar({ isOpen, onClose }) {
                                         ? "flex items-center justify-start gap-3 px-3"
                                         : "flex items-center justify-center gap-0 px-0 w-10 mx-auto",
                                     isActive
-                                        ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
-                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200",
+                                        ? "bg-amber-500/10 text-amber-500 font-semibold"
+                                        : "text-neutral-400 hover:bg-white/5 hover:text-white",
                                 ].join(" ")
                             }
                         >
@@ -226,7 +226,7 @@ export function Sidebar({ isOpen, onClose }) {
                     {isChatRoute && (
                         <div
                             className={[
-                                "h-full flex flex-col border-t border-slate-200 dark:border-slate-800",
+                                "h-full flex flex-col border-t border-white/8",
                                 "transition-opacity duration-300 ease-in-out",
                                 showText
                                     ? "opacity-100 pointer-events-auto"
@@ -234,14 +234,14 @@ export function Sidebar({ isOpen, onClose }) {
                             ].join(" ")}
                         >
                             <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-2">
-                                <span className="text-xs font-sans font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                <span className="text-xs font-sans font-semibold uppercase tracking-widest text-neutral-500">
                                     Riwayat Chat
                                 </span>
                                 <button
                                     onClick={() => createSession.mutate()}
                                     disabled={createSession.isPending}
                                     title="Chat Baru"
-                                    className="flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors disabled:opacity-60"
+                                    className="flex items-center justify-center w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors disabled:opacity-60"
                                 >
                                     {createSession.isPending ? (
                                         <LuLoader className="text-xs animate-spin" />
@@ -254,7 +254,7 @@ export function Sidebar({ isOpen, onClose }) {
                             <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
                                 {loadingSessions ? (
                                     <div className="flex items-center justify-center py-6">
-                                        <LuLoader className="text-xl text-slate-400 animate-spin" />
+                                        <LuLoader className="text-xl text-amber-500 animate-spin" />
                                     </div>
                                 ) : sessionsData?.length > 0 ? (
                                     sessionsData.map((s) => (
@@ -268,8 +268,8 @@ export function Sidebar({ isOpen, onClose }) {
                                                 "group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors",
                                                 String(s.id) ===
                                                 String(sessionId)
-                                                    ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
-                                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50",
+                                                    ? "bg-amber-500/10 text-amber-500"
+                                                    : "text-neutral-400 hover:bg-white/5 hover:text-white",
                                             ].join(" ")}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
@@ -283,7 +283,7 @@ export function Sidebar({ isOpen, onClose }) {
                                                     e.stopPropagation();
                                                     deleteSession.mutate(s.id);
                                                 }}
-                                                className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
+                                                className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
                                             >
                                                 <LuTrash2 className="text-sm" />
                                             </button>
@@ -291,8 +291,8 @@ export function Sidebar({ isOpen, onClose }) {
                                     ))
                                 ) : (
                                     <div className="text-center py-6">
-                                        <LuMessageSquare className="text-2xl text-slate-300 dark:text-slate-600 mx-auto mb-1" />
-                                        <p className="font-sans text-xs text-slate-400">
+                                        <LuMessageSquare className="text-2xl text-neutral-800 mx-auto mb-1" />
+                                        <p className="font-sans text-xs text-neutral-600">
                                             Belum ada chat
                                         </p>
                                     </div>
@@ -303,7 +303,7 @@ export function Sidebar({ isOpen, onClose }) {
                 </div>
 
                 {/* ══ BOTTOM — selalu di bawah ══════════════════════════════ */}
-                <div className="shrink-0 border-t border-slate-200 dark:border-slate-800">
+                <div className="shrink-0 border-t border-white/8">
                     {/* Quota card — max-height collapse smooth */}
                     <div
                         className={[
@@ -313,18 +313,18 @@ export function Sidebar({ isOpen, onClose }) {
                                 : "max-h-0 opacity-0 pt-0",
                         ].join(" ")}
                     >
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 mb-3">
+                        <div className="bg-[#161615]/45 border border-white/5 rounded-xl p-3 mb-3">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-sans font-medium text-slate-700 dark:text-slate-300">
+                                <span className="text-xs font-sans font-medium text-neutral-300">
                                     AI Quota
                                 </span>
-                                <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                                <span className="font-mono text-xs font-semibold text-amber-500">
                                     {quotaLoading && remaining === null ? "..." : `${remaining} left`}
                                 </span>
                             </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div className="w-full bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                                 <div
-                                    className="bg-linear-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-500"
+                                    className="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-500"
                                     style={{ width: `${quotaPct}%` }}
                                 />
                             </div>
@@ -340,14 +340,14 @@ export function Sidebar({ isOpen, onClose }) {
                                 navigate("/profile");
                                 onClose();
                             }}
-                            className="shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-linear-to-br from-blue-400 to-purple-500 text-white font-montserrat font-semibold text-sm shadow-md hover:opacity-90 transition-opacity"
+                            className="shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-black font-sans font-semibold text-sm shadow-md hover:opacity-90 transition-opacity"
                         >
                             {initial}
                         </button>
 
                         {/* Username — mengecil ke 0 */}
                         <span
-                            className={`flex-1 text-sm font-sans font-medium text-slate-700 dark:text-slate-300 ${shrinkText}`}
+                            className={`flex-1 text-sm font-sans font-medium text-neutral-200 ${shrinkText}`}
                         >
                             {user?.name || "User"}
                         </span>
@@ -368,9 +368,9 @@ export function Sidebar({ isOpen, onClose }) {
                                     await logout();
                                     navigate("/login", { replace: true });
                                 }}
-                                className="flex items-center justify-center w-9 h-9 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                                className="flex items-center justify-center w-9 h-9 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-colors"
                             >
-                                <LuLogOut className="text-xl shrink-0" />
+                                <LuLogOut className="text-lg shrink-0" />
                             </button>
                         </div>
                     </div>
