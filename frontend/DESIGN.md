@@ -1,135 +1,115 @@
 # Design System & UI Guidelines
-**Project:** AI Chatbot & Image Generation SaaS
-**Theme:** Clean Minimalist (Tailwind) + AI Elegance (Google Gemini)
-**Framework:** React + Tailwind CSS v4
+
+**Project:** AI Chatbot & Image Generation SaaS  
+**Theme:** Premium Glassmorphism + Apple Human Interface Guidelines (HIG) Elegance  
+**Framework:** React + Tailwind CSS v4 + Glin UI (`@glinui/ui` & `@glinui/tokens`) + `gooey-toast`
 
 ---
 
 ## 1. Core Philosophy
-Dokumen ini menjadi *Single Source of Truth* (SSOT) untuk pengembangan antarmuka (UI/UX) aplikasi. Semua komponen harus mematuhi prinsip berikut:
-- **Clean & Accessible:** Mengutamakan ruang kosong (*white space*), keterbacaan tinggi, dan kontras yang nyaman di mata.
-- **AI-Driven Elegance:** Identitas AI ditonjolkan melalui penggunaan gradien warna yang halus, transisi lembut, dan *soft shadows*.
-- **Adaptive:** Komponen harus mendukung *Light Mode* dan *Dark Mode* secara harmonis.
-- **Mobile-First:** Selalu desain untuk layar kecil (HP) terlebih dahulu, lalu gunakan *breakpoints* (`sm:`, `md:`, `lg:`) untuk layar yang lebih besar.
+
+Dokumen ini menjadi _Single Source of Truth_ (SSOT) untuk pengembangan antarmuka (UI/UX) aplikasi. Semua komponen wajib mematuhi aturan keselarasan, kedalaman visual, dan ergonomi Apple HIG yang diimplementasikan melalui ekosistem Glin UI:
+
+- **Token-Driven Consistency:** Seluruh pondasi layout, ukuran, dan skema warna diatur terpusat menggunakan `@glinui/tokens` yang dikonfigurasi mengikuti standar ketat Apple HIG.
+- **Clarity & Premium Glassmorphic:** Mengutamakan efek kaca transparan yang bersih, tajam, dengan tingkat kontras teks yang tinggi di atasnya. Mengeliminasi efek cairan pihak ketiga yang dapat merusak keterbacaan.
+- **True Dark Vibe:** Menggunakan basis warna hitam pekat (_true black_) ala layar OLED Apple untuk efisiensi energi dan kontras tinggi, dipadukan dengan pendaran aksen (_glow_) kuning-oranye keemasan yang mewah.
+- **Hit Targets (HIG Standards):** Semua komponen interaktif (tombol, area input) harus dikonfigurasi untuk memiliki tinggi atau area sentuh minimal setinggi **44px** demi kenyamanan kursor dan jari pengguna.
 
 ---
 
-## 2. Typography
+## 2. Typography & Hierarchy (HIG Compliant)
 
 ### Font Families
-Kita menggunakan kombinasi 3 *font* dari Google Fonts untuk membedakan hierarki informasi:
-- **Heading Font (Montserrat):** Digunakan khusus untuk *Headings* (H1-H6), nama aplikasi, dan judul kartu. Memberikan kesan modern dan geometris.
-  - *Tailwind class:* `font-montserrat`
-- **Body Font (Inter):** Digunakan untuk teks utama, paragraf, *chat bubble*, dan label antarmuka. Memiliki tingkat keterbacaan tinggi.
-  - *Tailwind class:* `font-sans`
-- **Mono/AI Accent Font (JetBrains Mono):** Digunakan untuk aksen teknis, teks *prompt* yang sedang diketik, *badge* status, atau blok kode.
-  - *Tailwind class:* `font-mono`
 
-### Hierarchy & Text Colors
-- **Heading Utama:** `font-montserrat font-bold tracking-tight text-slate-900 dark:text-slate-50`
-- **Teks Paragraf/Chat:** `font-sans font-normal text-slate-700 dark:text-slate-300`
-- **Teks Mono/Prompt:** `font-mono text-sm text-indigo-600 dark:text-indigo-400`
-- **Teks Muted/Info:** `font-sans font-normal text-sm text-slate-500 dark:text-slate-400`
+Menggunakan font bertipe _neo-grotesque_ yang bersih dan netral untuk mempertahankan kesan sistem bawaan yang premium:
 
----
+- **UI & Body Font (Inter / Geist Sans):** Digunakan untuk seluruh elemen teks aplikasi (Heading, Body, Chat Bubble, Input, Toast). Memberikan tingkat keterbacaan yang sangat tinggi dan profesional.
+    - _Tailwind class:_ `font-sans`
+- **Mono Accent Font (JetBrains Mono):** Hanya digunakan untuk porsi kecil yang bersifat teknis, seperti teks _prompt_ di galeri, kode model AI, atau angka statistik kuota.
+    - _Tailwind class:_ `font-mono`
 
-## 3. Iconography
+### Typography Scale & Color
 
-- **Library:** Menggunakan Lucide Icons melalui `react-icons`.
-- **Prefix:** Selalu gunakan *prefix* `Lu` (contoh: `LuBrain`, `LuSend`, `LuImage`).
-- **Style:** Karena mengusung tema *clean*, gunakan *icon* berbasis garis (*stroke*) bawaan Lucide, hindari *filled icons*.
-- **Sizing:** Standar ukuran *icon* dalam tombol atau antarmuka adalah `text-lg` atau `text-xl` (sekitar 20px - 24px) agar selaras dengan teks Inter.
+- **Large Title (Welcome back):** `font-sans font-semibold text-3xl tracking-tight text-white`
+- **Card/Section Title (Today, Quick Actions):** `font-sans font-medium text-sm tracking-wide text-neutral-400 uppercase`
+- **Body Text / Chat Bubble / Toast Text:** `font-sans font-normal text-sm tracking-wide text-neutral-200`
+- **Muted Text / Secondary Info:** `font-sans font-normal text-xs text-neutral-500`
 
 ---
 
-## 4. Color Palette & Theming
+## 3. Glin UI Tokens Configuration (Yellow-Orange Aura)
 
-### Base Colors (Background & Surface)
-- **Light Mode:**
-  - Background Utama: `bg-slate-50`
-  - Surface/Card: `bg-white`
-  - Border: `border-slate-200`
-- **Dark Mode:**
-  - Background Utama: `bg-slate-950`
-  - Surface/Card: `bg-slate-900`
-  - Border: `border-slate-800`
+Pemetaan `@glinui/tokens` wajib di-override di tingkat konfigurasi aplikasi agar menghasilkan tema _True Dark Golden_ khas Apple HIG yang presisi:
 
-### AI Accent Colors (The "Gemini" Vibe)
-Identitas utama aplikasi menggunakan gradasi warna khas AI (biru ke ungu/merah muda).
-- **Primary Gradient:** `bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500`
-- **Primary Text Gradient:** `bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500`
-- **Focus Ring:** `ring-indigo-500/50`
+### Base Colors & Surface Tokens
 
-### System States (Feedback Colors)
-- **Error/Destructive (Gagal/Kuota Habis):** `bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400`
-- **Success (Berhasil/Payment Paid):** `bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400`
-- **Warning/Pending:** `bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400`
+- `tokens.color.background`: `#0A0A09` (Hitam pekat murni)
+- `tokens.color.surface`: `rgba(22, 22, 21, 0.45)` (Wadah utama efek _glassmorphism_)
+- `tokens.color.border`: `rgba(255, 255, 255, 0.08)` (Garis pembatas kaca tipis khas Apple)
+
+### Golden Accent Tokens
+
+- `tokens.color.primary`: `#F59E0B` (Amber / Kuning Emas)
+- `tokens.color.primaryGradient`: `linear-gradient(to right, #FBBF24, #F59E0B, #F97316)` (Gradasi Kuning ke Oranye)
+
+### Spacing & Radius Tokens (HIG Standar)
+
+- `tokens.radius.card`: `24px` (Sudut melengkung besar khas Apple / _Squircle_)
+- `tokens.radius.button`: `9999px` (Melengkung penuh / _Rounded Full_)
+- `tokens.spacing.global`: `16px` (Kelipatan 8pt grid system)
 
 ---
 
-## 5. System States & Visual Effects
+## 4. Component Guidelines
 
-### Hover, Active, & Disabled States
-- **Soft Shadows (Elevations):**
-  - *Default Card:* `shadow-sm`
-  - *Hover State:* `hover:shadow-md transition-shadow duration-300`
-- **Disabled State:** Saat tombol ditekan atau kuota habis, turunkan *opacity* dan ubah kursor.
-  - *Classes:* `opacity-50 cursor-not-allowed pointer-events-none`
-- **Subtle Blur (Glass effect ringan):**
-  Digunakan pada Header/Top Bar agar teks di bawahnya terlihat samar saat di-scroll: `bg-white/80 dark:bg-slate-950/80 backdrop-blur-md`.
+### A. Glassmorphic Cards & Containers
 
-### Loading & Skeleton States
-Sangat penting saat menunggu respons Gemini AI atau proses Cloudflare AI.
-- **Skeleton Box (Image Generation):** Gunakan *pulse animation* dengan warna *slate* netral.
-  - *Classes:* `animate-pulse bg-slate-200 dark:bg-slate-800 rounded-xl`
-- **AI Active Glow:** Animasi *pulse* transparan (opacity 10-20%) pada elemen saat AI memproses.
+Gunakan komponen Card bawaan dari `@glinui/ui` dengan menerapkan utility class Tailwind v4 untuk efek kaca premium:
 
----
+- **Tailwind Classes:** `bg-neutral-900/40 backdrop-blur-xl border border-white/8 shadow-2xl shadow-black/80 overflow-hidden`
+- **Visual Glow:** Berikan efek pendaran luar yang halus (_subtle outer glow_) berwarna kuning/oranye menggunakan bayangan tipis pada elemen krusial: `shadow-[0_0_20px_rgba(245,158,11,0.05)]`.
 
-## 6. Component Guidelines
+### B. Input & Chat Box
 
-### A. Buttons
-- **Primary Button:** 
-  Menggunakan *Primary Gradient*, teks putih, tanpa *border*.
-  *Classes:* `bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white rounded-full px-6 py-2.5 font-sans font-medium hover:opacity-90 transition-opacity flex items-center gap-2`
-- **Secondary Button:** 
-  Transparan/putih dengan *border* tipis.
-  *Classes:* `bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full px-6 py-2.5 font-sans hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2`
+Kotak input diletakkan tetap (_fixed_) di area bawah layar menggunakan komponen Input/Textarea dari Glin UI.
 
-### B. Inputs & Chat Box
-- **Text Area/Input:** 
-  *Classes:* `bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all w-full font-sans`
+- **Classes:** Menggunakan properti padding `p-5` dengan font-sans bawaan.
+- **Text Area:** `w-full bg-transparent text-sm text-white placeholder-neutral-600 resize-none focus:outline-none font-sans tracking-wide`
 
-### C. Chat Interface
-- **User Bubble:** `bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl rounded-tr-sm px-5 py-3 max-w-[85%] md:max-w-[75%] font-sans`
-- **AI Bubble:** `bg-transparent text-slate-800 dark:text-slate-200 rounded-2xl px-5 py-3 max-w-[100%] md:max-w-[85%] font-sans`
+### C. Buttons (HIG Hit Target)
 
-### D. Image Gallery Cards
-- Menampilkan gambar hasil *generate* dengan sudut `rounded-xl` dan `overflow-hidden`.
-- *Hover Effect:* Muncul *overlay* gradasi gelap yang menampilkan teks *prompt*.
-  *Classes Overlay:* `absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 md:hover:opacity-100 transition-opacity flex items-end p-4 font-mono text-sm text-white`
+Tombol dari `@glinui/ui` dikonfigurasi menggunakan ukuran medium/large untuk mencapai batas minimal HIG.
+
+- **Primary Button Configuration:** Memakai token `primaryGradient`, tinggi minimal `h-10` atau `h-11`, teks berwarna hitam pekat (`text-black`), dan font-weight `font-semibold`.
+- **Secondary/Icon Button:** `w-10 h-10 rounded-full bg-neutral-900/80 border border-neutral-800 text-neutral-400 hover:text-white transition-colors flex items-center justify-center`
+
+### D. Quick Actions Cards (Grid)
+
+Kartu pintasan di bawah input box menggunakan layout grid 3 kolom yang dibungkus oleh komponen Card Glin UI.
+
+- **Classes:** `p-4 border border-white/5 hover:border-amber-500/20 transition-all hover:-translate-y-0.5 cursor-pointer rounded-2xl`
 
 ---
 
-## 7. Layouting, Spacing, & Z-Index Management
+## 5. System Feedback & Alerts (`gooey-toast`)
 
-### A. Container & Spacing
-- **Container Utama (Chat & Gallery):** Gunakan `max-w-4xl` atau `max-w-5xl` dengan `mx-auto` agar konten tidak terlalu melebar di monitor besar.
-- **Padding Global:** Gunakan `p-4` untuk *mobile* dan `md:p-8` untuk *desktop*.
+Notifikasi instan (_toast_) menggunakan library `gooey-toast` untuk memberikan efek transisan animasi membelah/menyatu yang elastis sebagai kontras dari struktur kaku Glin UI.
 
-### B. Responsive Behavior
-- **Sidebar (Navigasi):**
-  - **Mobile (`< 768px`):** Disembunyikan (menggunakan `hidden`). Digantikan oleh tombol "Hamburger" di Header yang membuka *off-canvas menu* atau *drawer*.
-  - **Desktop (`>= 768px`):** Tampil sebagai *fixed sidebar* di sebelah kiri dengan lebar `w-64` atau `w-72`. Area konten utama bergeser ke kanan (`md:ml-64`).
-- **Chat Input Area:**
-  Selalu *fixed* di bagian bawah layar. Pada mode *desktop*, lebarnya harus mengikuti lebar area konten utama (dikurangi lebar sidebar), bukan melebar *full screen*.
+- **Positioning:** _Top Center_ (`top-center`) untuk mobile, _Top Right_ (`top-right`) untuk desktop.
+- **Theming Customization:**
+    - _Background:_ `rgba(22, 22, 21, 0.85)` + `backdrop-blur-lg`
+    - _Border:_ `1px solid rgba(255, 255, 255, 0.08)`
+    - _Text:_ `font-sans text-sm text-neutral-200`
 
-### C. Z-Index Scale (Penting untuk menghindari *bug* tumpukan elemen)
-Ikuti hierarki *z-index* berikut secara ketat:
-- `z-0` : Background / Elemen dasar
-- `z-10` : Konten obrolan / Kartu galeri
-- `z-20` : Floating elements dalam konten (seperti tombol *scroll to bottom*)
-- `z-30` : Fixed Chat Input Area (di bagian bawah)
-- `z-40` : Header / Top Navigation Bar
-- `z-50` : Sidebar / Mobile Drawer Navigation
-- `z-60` : Modal Popup / Alert / Midtrans Snap Overlay
+---
+
+## 6. Layouting & Z-Index Management
+
+Ikuti susunan lapisan berikut secara ketat agar tidak ada komponen atau toast yang tumpang tindih secara keliru:
+
+- `z-0` : Background hitam pekat & pendaran aura kuning-oranye statis (menggunakan radial-gradient CSS).
+- `z-10` : Konten utama, teks obrolan, dan komponen dasar `@glinui/ui`.
+- `z-20` : Fixed Chat Input Area di bagian bawah.
+- `z-30` : Sidebar & Top Header Navigation.
+- `z-40` : Modal Popup / Overlay Transaksi Midtrans.
+- `z-50` : `gooey-toast` Container (Posisi paling atas untuk feedback penting sistem).
