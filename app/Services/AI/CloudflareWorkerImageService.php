@@ -37,12 +37,10 @@ class CloudflareWorkerImageService
 
         $request = Http::timeout($this->timeout)
             ->connectTimeout(30)
-            ->retry($this->retryTimes, $this->retrySleep)
-            ->acceptJson()
-            ->asJson();
+            ->retry($this->retryTimes, $this->retrySleep);
 
         if (!empty($this->token)) {
-            $request->withToken($this->token);
+            $request = $request->withToken($this->token);
         }
 
         $response = $request->post($this->url, $payload);

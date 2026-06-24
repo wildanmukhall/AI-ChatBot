@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { generateImage, getImageStatus } from "../api/imageApi";
 import {
     LuSparkles,
     LuImage,
@@ -24,10 +25,10 @@ const STYLE_PRESETS = [
 ];
 
 const ASPECT_RATIOS = [
-    { id: "1:1", label: "Square", icon: "⬜", w: 512, h: 512 },
-    { id: "16:9", label: "Landscape", icon: "🖥️", w: 912, h: 512 },
-    { id: "9:16", label: "Portrait", icon: "📱", w: 512, h: 912 },
-    { id: "4:3", label: "Classic", icon: "📺", w: 680, h: 512 },
+    { id: "1:1", label: "Square", icon: "⬜", w: 1024, h: 1024 },
+    { id: "16:9", label: "Landscape", icon: "🖥️", w: 1024, h: 512 },
+    { id: "9:16", label: "Portrait", icon: "📱", w: 512, h: 1024 },
+    { id: "4:3", label: "Classic", icon: "📺", w: 1024, h: 768 },
 ];
 
 const PROMPT_SUGGESTIONS = [
@@ -48,42 +49,57 @@ export default function ImagePage() {
     const [copiedPrompt, setCopiedPrompt] = useState(false);
     const [activeImage, setActiveImage] = useState(null);
 
+    const [generatingStatus, setGeneratingStatus] = useState("Submitting your request...");
+
     const handleGenerate = async (e) => {
         e.preventDefault();
         if (!prompt.trim() || isGenerating) return;
 
         setIsGenerating(true);
+        setGeneratingStatus("Submitting your request...");
         try {
-            // Import the api functions inline or add to top
-            const { generateImage, getImageStatus } = await import('../api/imageApi');
+            
+            const ratio = ASPECT_RATIOS.find((r) => r.id === selectedRatio);
+            const styleLabel = STYLE_PRESETS.find((s) => s.id === selectedStyle)?.label;
+            const finalPrompt = selectedStyle !== "photorealistic" ? `${prompt}, ${styleLabel} style` : prompt;
             
             const reqData = {
-                prompt,
-                // Negative prompt is currently not supported by Cloudflare SDXL Lightning, but we send it if we have it
+                prompt: finalPrompt,
+                width: ratio.w,
+                height: ratio.h,
             };
             
             const response = await generateImage(reqData);
             const imageId = response.data.id;
             
-            // Start polling
-            let isCompleted = false;
+            setGeneratingStatus("Image is being generated, please wait...");
+
+            // Poll with timeout: max 120 seconds (40 attempts × 3s)
+            let attempts = 0;
+            const MAX_ATTEMPTS = 40;
             let finalImageUrl = null;
             
-            while (!isCompleted) {
+            while (attempts < MAX_ATTEMPTS) {
                 await new Promise(r => setTimeout(r, 3000));
+                attempts++;
+
                 const statusRes = await getImageStatus(imageId);
-                if (statusRes.data.status === 'completed') {
-                    isCompleted = true;
+                const status = statusRes.data.status;
+
+                if (status === 'completed') {
                     finalImageUrl = statusRes.data.image_url;
-                } else if (statusRes.data.status === 'failed') {
-                    isCompleted = true;
-                    alert("Generation failed: " + statusRes.data.error_message);
-                    setIsGenerating(false);
-                    return;
+                    break;
+                } else if (status === 'failed') {
+                    throw new Error(statusRes.data.error_message || "Generation failed on server.");
                 }
+                // still processing — keep polling
+                setGeneratingStatus(`Still generating... (${attempts * 3}s)`);
             }
 
-            const ratio = ASPECT_RATIOS.find((r) => r.id === selectedRatio);
+            if (!finalImageUrl) {
+                throw new Error("Generation timed out after 2 minutes. The queue worker may not be running.");
+            }
+
             const newImage = {
                 id: imageId,
                 url: finalImageUrl,
@@ -97,10 +113,12 @@ export default function ImagePage() {
             setIsGenerating(false);
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || "Failed to generate image.");
+            const msg = error.message || error.response?.data?.message || "Failed to generate image.";
+            alert(msg);
             setIsGenerating(false);
         }
     };
+
 
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(prompt);
@@ -297,7 +315,7 @@ export default function ImagePage() {
                             <div className="flex items-center gap-3 mb-4">
                                 <LuLoader className="text-purple-500 text-xl animate-spin" />
                                 <span className="font-sans text-sm text-slate-500">
-                                    Creating your masterpiece...
+                                    {generatingStatus}
                                 </span>
                             </div>
                             <div className="grid grid-cols-2 gap-4">

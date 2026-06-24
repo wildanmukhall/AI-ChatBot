@@ -50,11 +50,14 @@ export default function ChatPage() {
         setTempUserMessage({ role: "user", content: msg });
         try {
             await chatApi.sendMessage(sid, { message: msg });
+        } catch (err) {
+            console.error("Failed to send message:", err);
+            alert(err?.response?.data?.message || "Gagal memproses pesan, silakan coba lagi.");
+        } finally {
             queryClient.invalidateQueries({
                 queryKey: ["chat-messages", String(sid)],
             });
             queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
-        } finally {
             setIsSending(false);
             setTempUserMessage(null);
         }

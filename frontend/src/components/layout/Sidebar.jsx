@@ -12,6 +12,7 @@ import {
     LuPlus,
     LuTrash2,
     LuLoader,
+    LuGalleryHorizontalEnd,
 } from "react-icons/lu";
 
 export function Sidebar({ isOpen, onClose }) {
@@ -85,6 +86,11 @@ export function Sidebar({ isOpen, onClose }) {
             name: "Generate Image",
             path: "/image",
             icon: <LuImage className="text-[20px] shrink-0" />,
+        },
+        {
+            name: "Gallery",
+            path: "/gallery",
+            icon: <LuGalleryHorizontalEnd className="text-[20px] shrink-0" />,
         },
         {
             name: "Profile",

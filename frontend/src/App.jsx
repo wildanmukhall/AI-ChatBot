@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import ImagePage from './pages/ImagePage';
+import GalleryPage from './pages/GalleryPage';
 
 function App() {
   const fetchUser = useAuthStore((state) => state.fetchUser);
@@ -53,6 +54,7 @@ function App() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="chat/:sessionId" element={<ChatPage />} />
           <Route path="image" element={<ImagePage />} />
+          <Route path="gallery" element={<GalleryPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 
