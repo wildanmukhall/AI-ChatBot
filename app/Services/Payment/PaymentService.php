@@ -104,8 +104,13 @@ class PaymentService
                 $order->status = $internalStatus;
                 if ($internalStatus === 'paid') {
                     $order->paid_at = now();
-                    // TODO: Implementasi modul kuota disini nanti
-                    // misal: $order->user->increment('image_quota', $order->image_quota);
+                    // Kuota otomatis bertambah karena dihitung secara dinamis:
+                    // remaining = sum(paid orders' image_quota) - count(completed images)
+                    Log::info('Payment successful, quota added', [
+                        'order_id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'image_quota' => $order->image_quota,
+                    ]);
                 } elseif ($internalStatus === 'expired') {
                     $order->expired_at = now();
                 }
@@ -128,7 +133,46 @@ class PaymentService
             throw new PaymentGatewayException('Order tidak ditemukan.', 404);
         }
 
+        // Auto-sync status from Midtrans if still pending
+        if ($order->status === 'pending') {
+            $this->syncOrder($order);
+        }
+
         return $order;
+    }
+
+    public function syncOrder(Order $order): void
+    {
+        $statusData = $this->midtransService->syncStatus($order);
+        if (!empty($statusData)) {
+            // Re-use notification logic but without signature verification
+            // since we fetched it directly from Midtrans API
+            $internalStatus = $this->midtransService->mapStatus($statusData);
+            
+            DB::beginTransaction();
+            try {
+                $this->updatePayment($order, $statusData);
+                
+                if ($order->status !== 'paid') {
+                    $order->status = $internalStatus;
+                    if ($internalStatus === 'paid') {
+                        $order->paid_at = now();
+                        Log::info('Payment successful (synced manually), quota added', [
+                            'order_id' => $order->id,
+                            'user_id' => $order->user_id,
+                            'image_quota' => $order->image_quota,
+                        ]);
+                    } elseif ($internalStatus === 'expired') {
+                        $order->expired_at = now();
+                    }
+                    $order->save();
+                }
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Failed to sync order', ['message' => $e->getMessage()]);
+            }
+        }
     }
 
     protected function updatePayment(Order $order, array $payload): Payment

@@ -123,4 +123,17 @@ class MidtransService
 
         return 'pending';
     }
+
+    public function syncStatus(Order $order): array
+    {
+        $response = Http::withBasicAuth($this->serverKey, '')
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->get($this->apiBaseUrl . '/v2/' . $order->order_code . '/status');
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        return [];
+    }
 }
