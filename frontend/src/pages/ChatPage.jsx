@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { chatApi } from "../api/chatApi";
-import { LuSend, LuLoader, LuBot, LuUser } from "react-icons/lu";
+import { LuSend, LuLoader, LuBot, LuUser, LuZap } from "react-icons/lu";
+import useQuotaStore from '../stores/quotaStore';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -14,6 +15,12 @@ export default function ChatPage() {
     const [isSending, setIsSending] = useState(false);
     const [tempUserMessage, setTempUserMessage] = useState(null);
     const messagesEndRef = useRef(null);
+
+    const { remaining: quotaRemaining, fetchQuota } = useQuotaStore();
+
+    useEffect(() => {
+        fetchQuota();
+    }, [fetchQuota]);
 
     const { data: messagesData, isLoading: loadingMessages } = useQuery({
         queryKey: ["chat-messages", sessionId],
@@ -169,6 +176,12 @@ export default function ChatPage() {
 
             {/* Input area */}
             <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                <div className="flex items-center justify-between max-w-4xl mx-auto mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-sans text-slate-400">
+                        <LuZap className="text-amber-500" />
+                        <span>{quotaRemaining ?? '...'} kuota gambar tersisa</span>
+                    </div>
+                </div>
                 <form
                     onSubmit={handleSend}
                     className="flex gap-3 max-w-4xl mx-auto"

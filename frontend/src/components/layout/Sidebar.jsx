@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useMatch, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import useAuthStore from "../../stores/authStore";
+import useQuotaStore from "../../stores/quotaStore";
 import { chatApi } from "../../api/chatApi";
 import {
     LuMessageSquare,
@@ -21,6 +22,16 @@ export function Sidebar({ isOpen, onClose }) {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const initial = (user?.name || "U").charAt(0).toUpperCase();
+
+    const { remaining, used, fetchQuota, isLoading: quotaLoading } = useQuotaStore();
+    
+    // Fetch quota on mount if needed
+    useEffect(() => {
+        fetchQuota();
+    }, [fetchQuota]);
+
+    const totalQuota = (remaining || 0) + (used || 0);
+    const quotaPct = totalQuota > 0 ? Math.round(((remaining || 0) / totalQuota) * 100) : 0;
 
     const [hovered, setHovered] = useState(false);
 
@@ -305,16 +316,16 @@ export function Sidebar({ isOpen, onClose }) {
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 mb-3">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-xs font-sans font-medium text-slate-700 dark:text-slate-300">
-                                    Image Quota
+                                    AI Quota
                                 </span>
                                 <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                                    12 left
+                                    {quotaLoading && remaining === null ? "..." : `${remaining} left`}
                                 </span>
                             </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
                                 <div
-                                    className="bg-linear-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
-                                    style={{ width: "25%" }}
+                                    className="bg-linear-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-500"
+                                    style={{ width: `${quotaPct}%` }}
                                 />
                             </div>
                         </div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '../api/profileApi';
 import { getPricingPlans, checkout, getOrders } from '../api/paymentApi';
 import useAuthStore from '../stores/authStore';
+import useQuotaStore from '../stores/quotaStore';
 import {
     LuUser, LuLock, LuLoader, LuCheck, LuSave,
     LuZap, LuShoppingBag, LuHistory,
@@ -177,16 +178,17 @@ function SnapModal({ snapToken, clientKey, onClose, onSuccess }) {
     useEffect(() => {
         if (!snapToken || !clientKey) return;
 
-        // Load Midtrans Snap script if not loaded
         const scriptId = 'midtrans-snap-script';
         let script = document.getElementById(scriptId);
+        let isOpened = false; // Prevent multiple opens
 
         const openSnap = () => {
+            if (isOpened) return;
             if (window.snap) {
+                isOpened = true;
                 window.snap.pay(snapToken, {
                     onSuccess: (result) => {
                         onSuccess(result);
-                        onClose();
                     },
                     onPending: (result) => {
                         console.log('Payment pending:', result);
@@ -200,6 +202,8 @@ function SnapModal({ snapToken, clientKey, onClose, onSuccess }) {
                         onClose();
                     },
                 });
+            } else {
+                setTimeout(openSnap, 100);
             }
         };
 
@@ -213,39 +217,17 @@ function SnapModal({ snapToken, clientKey, onClose, onSuccess }) {
         } else {
             openSnap();
         }
-    }, [snapToken, clientKey, onClose, onSuccess]);
+    }, [snapToken, clientKey]); // Exclude onClose/onSuccess from dependencies to avoid re-triggering
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/20 mx-auto mb-4">
-                    <LuCreditCard className="text-violet-600 text-3xl" />
-                </div>
-                <h3 className="font-montserrat font-bold text-lg text-slate-900 dark:text-slate-100 mb-2">
-                    Membuka Halaman Pembayaran
-                </h3>
-                <p className="font-sans text-sm text-slate-500 dark:text-slate-400 mb-6">
-                    Midtrans Snap sedang dibuka. Selesaikan pembayaran di popup yang muncul.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-violet-600 dark:text-violet-400 mb-6">
-                    <LuLoader className="animate-spin text-lg" />
-                    <span className="font-sans text-sm">Memuat payment gateway...</span>
-                </div>
-                <button
-                    onClick={onClose}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-sans text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                    Batal
-                </button>
-            </div>
-        </div>
-    );
+    // Snap handles its own modal UI — don't render any overlay
+    return null;
 }
 
 // ── Main ProfilePage ──────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
     const { user, fetchUser } = useAuthStore();
+    const refreshQuota = useQuotaStore((s) => s.refreshQuota);
     const queryClient = useQueryClient();
 
     const [nameForm, setNameForm] = useState({ name: user?.name || '' });
@@ -338,7 +320,7 @@ export default function ProfilePage() {
             const snapToken = data.payment.snap_token;
             // Get client key from meta or env (exposed via API or hardcoded for sandbox)
             const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || '';
-            setSnapData({ snapToken, clientKey });
+            setSnapData({ snapToken, clientKey, orderId: data.order.id });
         } catch (err) {
             alert(err.response?.data?.message || 'Gagal memulai pembayaran. Coba lagi.');
         } finally {
@@ -346,12 +328,26 @@ export default function ProfilePage() {
         }
     }, []);
 
-    const handlePaymentSuccess = useCallback(() => {
+    const handlePaymentSuccess = useCallback(async () => {
+        if (snapData?.orderId) {
+            // Force backend to sync with Midtrans (useful for local Sandbox without Ngrok)
+            try {
+                await import('../api/paymentApi').then(m => m.getOrderDetail(snapData.orderId));
+            } catch (e) {
+                console.error("Gagal sync order status", e);
+            }
+        }
+        
         setPaySuccess('Pembayaran berhasil! Kuota kamu telah ditambahkan.');
         queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
+        queryClient.invalidateQueries({ queryKey: ['image-quota'] });
+        refreshQuota();
+        fetchUser();
+        setSnapData(null); // Explicitly close modal
+        setActiveTab('history'); // Balik ke halaman riwayat
         setTimeout(() => setPaySuccess(''), 5000);
-    }, [queryClient]);
+    }, [queryClient, refreshQuota, fetchUser, snapData]);
 
     // ── Quota display helpers ─────────────────────────────────────────────────
 

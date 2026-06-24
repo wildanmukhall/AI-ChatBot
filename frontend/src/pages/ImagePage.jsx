@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { generateImage, getImageStatus } from "../api/imageApi";
+import useQuotaStore from '../stores/quotaStore';
 import {
     LuSparkles,
     LuImage,
@@ -24,12 +26,7 @@ const STYLE_PRESETS = [
     { id: "cinematic", label: "Cinematic", emoji: "🎬" },
 ];
 
-const ASPECT_RATIOS = [
-    { id: "1:1", label: "Square", icon: "⬜", w: 1024, h: 1024 },
-    { id: "16:9", label: "Landscape", icon: "🖥️", w: 1024, h: 512 },
-    { id: "9:16", label: "Portrait", icon: "📱", w: 512, h: 1024 },
-    { id: "4:3", label: "Classic", icon: "📺", w: 1024, h: 768 },
-];
+
 
 const PROMPT_SUGGESTIONS = [
     "A futuristic city at sunset with flying cars and neon lights",
@@ -43,7 +40,6 @@ const PROMPT_SUGGESTIONS = [
 export default function ImagePage() {
     const [prompt, setPrompt] = useState("");
     const [selectedStyle, setSelectedStyle] = useState("photorealistic");
-    const [selectedRatio, setSelectedRatio] = useState("1:1");
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImages, setGeneratedImages] = useState([]);
     const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -51,22 +47,35 @@ export default function ImagePage() {
 
     const [generatingStatus, setGeneratingStatus] = useState("Submitting your request...");
 
+    const navigate = useNavigate();
+    const { remaining: quotaRemaining, fetchQuota, decrementQuota } = useQuotaStore();
+
+    useEffect(() => {
+        fetchQuota();
+    }, [fetchQuota]);
+
     const handleGenerate = async (e) => {
         e.preventDefault();
         if (!prompt.trim() || isGenerating) return;
+
+        if (quotaRemaining !== null && quotaRemaining <= 0) {
+            if (confirm('Kuota generate gambar habis! Buka halaman Profil untuk beli kuota?')) {
+                navigate('/profile');
+            }
+            return;
+        }
 
         setIsGenerating(true);
         setGeneratingStatus("Submitting your request...");
         try {
             
-            const ratio = ASPECT_RATIOS.find((r) => r.id === selectedRatio);
             const styleLabel = STYLE_PRESETS.find((s) => s.id === selectedStyle)?.label;
             const finalPrompt = selectedStyle !== "photorealistic" ? `${prompt}, ${styleLabel} style` : prompt;
             
             const reqData = {
                 prompt: finalPrompt,
-                width: ratio.w,
-                height: ratio.h,
+                width: 1024,
+                height: 1024,
             };
             
             const response = await generateImage(reqData);
@@ -105,12 +114,13 @@ export default function ImagePage() {
                 url: finalImageUrl,
                 prompt,
                 style: selectedStyle,
-                ratio: selectedRatio,
+                ratio: "1:1",
             };
 
             setGeneratedImages((prev) => [newImage, ...prev]);
             setActiveImage(newImage);
             setIsGenerating(false);
+            decrementQuota();
         } catch (error) {
             console.error(error);
             const msg = error.message || error.response?.data?.message || "Failed to generate image.";
@@ -131,14 +141,14 @@ export default function ImagePage() {
     return (
         <div className="w-full min-h-screen">
             {/* ── Hero header ── */}
-            <div className="relative overflow-hidden rounded-3xl mb-8 bg-linear-to-br from-violet-600 via-purple-600 to-indigo-600 p-8 md:p-12 shadow-2xl shadow-purple-500/20">
+            <div className="relative overflow-hidden rounded-3xl mb-8 bg-linear-to-br from-violet-600 via-purple-600 to-indigo-600 p-8 shadow-2xl shadow-purple-500/20">
                 {/* Decorative blobs */}
                 <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
                 <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
                 <div className="absolute top-8 right-8 w-32 h-32 rounded-full bg-pink-500/20 blur-2xl" />
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
-                    <div className="flex-1">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
                         <div className="flex items-center gap-3 mb-3">
                             <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm">
                                 <LuPenTool className="text-white text-xl" />
@@ -159,22 +169,15 @@ export default function ImagePage() {
                         </p>
                     </div>
 
-                    {/* Stats */}
-                    <div className="flex gap-4 md:gap-6">
-                        {[
-                            { val: "10M+", label: "Images" },
-                            { val: "500K+", label: "Users" },
-                            { val: "4.9★", label: "Rating" },
-                        ].map((s) => (
-                            <div key={s.label} className="text-center">
-                                <p className="font-montserrat font-bold text-2xl text-white">
-                                    {s.val}
-                                </p>
-                                <p className="font-sans text-xs text-purple-300">
-                                    {s.label}
-                                </p>
-                            </div>
-                        ))}
+                    {/* Quota indicator */}
+                    <div className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 shadow-xl">
+                        <LuZap className="text-yellow-300 text-2xl" />
+                        <div className="flex flex-col">
+                            <span className="font-montserrat font-bold text-2xl text-white leading-none">
+                                {quotaRemaining ?? '...'}
+                            </span>
+                            <span className="font-sans text-xs text-purple-200">kuota tersisa</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -253,37 +256,7 @@ export default function ImagePage() {
                         </div>
                     </div>
 
-                    {/* Aspect ratio */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                        <p className="font-montserrat font-semibold text-sm text-slate-700 dark:text-slate-300 mb-3">
-                            Aspect Ratio
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                            {ASPECT_RATIOS.map((ratio) => (
-                                <button
-                                    key={ratio.id}
-                                    onClick={() => setSelectedRatio(ratio.id)}
-                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl font-sans text-sm font-medium transition-all border ${
-                                        selectedRatio === ratio.id
-                                            ? "bg-purple-50 dark:bg-purple-500/10 border-purple-300 dark:border-purple-500/40 text-purple-700 dark:text-purple-300"
-                                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                                    }`}
-                                >
-                                    <span className="text-base">
-                                        {ratio.icon}
-                                    </span>
-                                    <span>
-                                        <span className="font-mono text-xs">
-                                            {ratio.id}
-                                        </span>
-                                        <span className="ml-1 opacity-60">
-                                            {ratio.label}
-                                        </span>
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+
 
                     {/* Prompt suggestions */}
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
