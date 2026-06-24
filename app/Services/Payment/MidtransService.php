@@ -123,4 +123,20 @@ class MidtransService
 
         return 'pending';
     }
+
+    public function checkTransactionStatus(string $orderId): ?array
+    {
+        try {
+            $response = Http::withBasicAuth($this->serverKey, '')
+                ->get("{$this->apiBaseUrl}/v2/{$orderId}/status");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Midtrans Get Status Error', ['message' => $e->getMessage()]);
+            return null;
+        }
+    }
 }

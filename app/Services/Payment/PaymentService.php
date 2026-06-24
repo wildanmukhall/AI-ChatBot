@@ -91,6 +91,26 @@ class PaymentService
             throw new PaymentGatewayException('Order tidak ditemukan.');
         }
 
+        $this->processTransactionStatus($order, $payload);
+    }
+
+    public function syncOrder(Order $order): Order
+    {
+        // Don't sync if already final status
+        if (in_array($order->status, ['paid', 'failed', 'cancelled', 'expired', 'denied', 'refunded'])) {
+            return $order;
+        }
+
+        $payload = $this->midtransService->checkTransactionStatus($order->order_code);
+        if ($payload) {
+            $this->processTransactionStatus($order, $payload);
+        }
+
+        return $order->refresh();
+    }
+
+    protected function processTransactionStatus(Order $order, array $payload): void
+    {
         $internalStatus = $this->midtransService->mapStatus($payload);
         
         DB::beginTransaction();
@@ -104,8 +124,8 @@ class PaymentService
                 $order->status = $internalStatus;
                 if ($internalStatus === 'paid') {
                     $order->paid_at = now();
-                    // TODO: Implementasi modul kuota disini nanti
-                    // misal: $order->user->increment('image_quota', $order->image_quota);
+                    // Implementasi modul kuota: tambahkan image_quota ke user
+                    $order->user->increment('image_quota', $order->image_quota);
                 } elseif ($internalStatus === 'expired') {
                     $order->expired_at = now();
                 }
@@ -115,7 +135,7 @@ class PaymentService
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to update order from webhook', ['message' => $e->getMessage()]);
+            Log::error('Failed to update order status', ['message' => $e->getMessage()]);
             throw new PaymentGatewayException('Gagal mengupdate status pesanan.');
         }
     }

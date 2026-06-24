@@ -303,19 +303,13 @@ export function Sidebar({ isOpen, onClose }) {
                         ].join(" ")}
                     >
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 mb-3">
-                            <div className="flex justify-between items-center mb-2">
+                            <div className="flex justify-between items-center">
                                 <span className="text-xs font-sans font-medium text-slate-700 dark:text-slate-300">
                                     Image Quota
                                 </span>
                                 <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                                    12 left
+                                    {user?.image_quota || 0} left
                                 </span>
-                            </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                                <div
-                                    className="bg-linear-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
-                                    style={{ width: "25%" }}
-                                />
                             </div>
                         </div>
                     </div>

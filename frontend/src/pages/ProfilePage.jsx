@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '../api/profileApi';
-import { getPricingPlans, checkout, getOrders } from '../api/paymentApi';
+import { getPricingPlans, checkout, getOrders, syncOrder } from '../api/paymentApi';
 import useAuthStore from '../stores/authStore';
 import {
     LuUser, LuLock, LuLoader, LuCheck, LuSave,
@@ -134,9 +134,11 @@ function PricingCard({ plan, onSelect, isLoading: buyLoading, buyingId }) {
 
 // ── Order Row ─────────────────────────────────────────────────────────────────
 
-function OrderRow({ order }) {
+function OrderRow({ order, onSync, syncingId }) {
     const cfg = ORDER_STATUS[order.status] ?? ORDER_STATUS.pending;
     const Icon = cfg.icon;
+    const isSyncing = syncingId === order.id;
+
     return (
         <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border ${cfg.bg}`}>
             <div className="flex items-center gap-3">
@@ -166,6 +168,16 @@ function OrderRow({ order }) {
                         {formatDate(order.created_at)}
                     </p>
                 </div>
+                {order.status === 'pending' && onSync && (
+                    <button
+                        onClick={() => onSync(order.id)}
+                        disabled={isSyncing}
+                        className="ml-2 flex items-center justify-center p-2 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400 disabled:opacity-50 transition-colors"
+                        title="Cek Status Pembayaran"
+                    >
+                        <LuHistory className={isSyncing ? "animate-spin" : ""} />
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -173,7 +185,7 @@ function OrderRow({ order }) {
 
 // ── Snap Payment Modal ────────────────────────────────────────────────────────
 
-function SnapModal({ snapToken, clientKey, onClose, onSuccess }) {
+function SnapModal({ snapToken, clientKey, orderId, onClose, onSuccess }) {
     useEffect(() => {
         if (!snapToken || !clientKey) return;
 
@@ -185,7 +197,7 @@ function SnapModal({ snapToken, clientKey, onClose, onSuccess }) {
             if (window.snap) {
                 window.snap.pay(snapToken, {
                     onSuccess: (result) => {
-                        onSuccess(result);
+                        onSuccess(orderId);
                         onClose();
                     },
                     onPending: (result) => {
@@ -336,9 +348,10 @@ export default function ProfilePage() {
             const res = await checkout({ pricing_plan_id: plan.id });
             const { data } = res.data;
             const snapToken = data.payment.snap_token;
+            const orderId = data.order.id;
             // Get client key from meta or env (exposed via API or hardcoded for sandbox)
             const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || '';
-            setSnapData({ snapToken, clientKey });
+            setSnapData({ snapToken, clientKey, orderId });
         } catch (err) {
             alert(err.response?.data?.message || 'Gagal memulai pembayaran. Coba lagi.');
         } finally {
@@ -346,12 +359,36 @@ export default function ProfilePage() {
         }
     }, []);
 
-    const handlePaymentSuccess = useCallback(() => {
+    const handlePaymentSuccess = useCallback(async (orderId) => {
+        if (orderId) {
+            try {
+                await syncOrder(orderId);
+            } catch (err) {
+                console.error("Failed to sync order:", err);
+            }
+        }
         setPaySuccess('Pembayaran berhasil! Kuota kamu telah ditambahkan.');
         queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
+        fetchUser(); // refetch user to update state
         setTimeout(() => setPaySuccess(''), 5000);
-    }, [queryClient]);
+    }, [queryClient, fetchUser]);
+
+    const [syncingOrderId, setSyncingOrderId] = useState(null);
+
+    const handleSyncOrder = useCallback(async (orderId) => {
+        setSyncingOrderId(orderId);
+        try {
+            await syncOrder(orderId);
+            queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            fetchUser();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Gagal mengecek status pesanan.');
+        } finally {
+            setSyncingOrderId(null);
+        }
+    }, [queryClient, fetchUser]);
 
     // ── Quota display helpers ─────────────────────────────────────────────────
 
@@ -588,7 +625,12 @@ export default function ProfilePage() {
                             ) : (
                                 <div className="space-y-3">
                                     {ordersData.map((order) => (
-                                        <OrderRow key={order.id} order={order} />
+                                        <OrderRow 
+                                            key={order.id} 
+                                            order={order} 
+                                            onSync={handleSyncOrder}
+                                            syncingId={syncingOrderId}
+                                        />
                                     ))}
                                 </div>
                             )}
@@ -673,6 +715,7 @@ export default function ProfilePage() {
                 <SnapModal
                     snapToken={snapData.snapToken}
                     clientKey={snapData.clientKey}
+                    orderId={snapData.orderId}
                     onClose={() => setSnapData(null)}
                     onSuccess={handlePaymentSuccess}
                 />

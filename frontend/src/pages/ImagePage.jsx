@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { generateImage, getImageStatus } from "../api/imageApi";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-    LuSparkles,
-    LuImage,
+    LuCheck,
+    LuCopy,
     LuDownload,
+    LuImage,
     LuLoader,
     LuPenTool,
-    LuZap,
     LuRefreshCw,
-    LuCopy,
-    LuCheck,
+    LuSparkles,
+    LuZap,
 } from "react-icons/lu";
+import { generateImage, getImageStatus } from "../api/imageApi";
+import useAuthStore from "../stores/authStore";
 
 // Style presets Freepik-style
 const STYLE_PRESETS = [
@@ -41,6 +43,7 @@ const PROMPT_SUGGESTIONS = [
 ];
 
 export default function ImagePage() {
+    const queryClient = useQueryClient();
     const [prompt, setPrompt] = useState("");
     const [selectedStyle, setSelectedStyle] = useState("photorealistic");
     const [selectedRatio, setSelectedRatio] = useState("1:1");
@@ -49,11 +52,17 @@ export default function ImagePage() {
     const [copiedPrompt, setCopiedPrompt] = useState(false);
     const [activeImage, setActiveImage] = useState(null);
 
+    const { user, fetchUser } = useAuthStore();
     const [generatingStatus, setGeneratingStatus] = useState("Submitting your request...");
 
     const handleGenerate = async (e) => {
         e.preventDefault();
         if (!prompt.trim() || isGenerating) return;
+
+        if (user?.image_quota !== undefined && user.image_quota <= 0) {
+            alert("Kuota generate gambar kamu habis. Silakan beli paket kuota di halaman Profil untuk melanjutkan.");
+            return;
+        }
 
         setIsGenerating(true);
         setGeneratingStatus("Submitting your request...");
@@ -71,6 +80,13 @@ export default function ImagePage() {
             
             const response = await generateImage(reqData);
             const imageId = response.data.id;
+            
+            // Langsung kurangi kuota di lokal tanpa perlu refresh
+            useAuthStore.setState((state) => ({
+                user: { ...state.user, image_quota: Math.max(0, state.user.image_quota - 1) }
+            }));
+            queryClient.invalidateQueries({ queryKey: ["profile-stats"] });
+            if (fetchUser) fetchUser(); // Pastikan sinkron dengan server
             
             setGeneratingStatus("Image is being generated, please wait...");
 
