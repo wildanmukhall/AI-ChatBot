@@ -2,52 +2,78 @@
 
 namespace App\Services\Quota;
 
+use App\Models\GeneratedImage;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**
  * ImageQuotaService
  *
  * Service untuk mengelola kuota generate gambar per user.
- * Akan diimplementasikan penuh pada modul pricing plan.
+ * Kuota dihitung secara dinamis:
+ *   remaining = sum(paid orders' image_quota) - count(completed generated images)
  *
  * Logika bisnis kuota:
  * - Mengecek sisa kuota user
- * - Mengurangi kuota setelah generate
+ * - Mengurangi kuota setelah generate (otomatis via GeneratedImage)
  * - Mengecek apakah user memiliki akses
  */
 class ImageQuotaService
 {
     /**
-     * Mengecek apakah user masih memiliki kuota (stub).
+     * Mengecek apakah user masih memiliki kuota.
      */
-    public function hasQuota(\App\Models\User $user): bool
+    public function hasQuota(User $user): bool
     {
-        Log::info('ImageQuotaService: hasQuota dipanggil', ['user_id' => $user->id]);
-        return true;
+        return $this->getRemainingQuota($user) > 0;
     }
 
     /**
-     * Mengurangi kuota user (stub).
+     * Mengurangi kuota user.
+     * Kuota berkurang secara otomatis karena dihitung dari jumlah GeneratedImage.
+     * Method ini hanya untuk logging.
      */
-    public function consume(\App\Models\User $user, int $amount = 1, array $context = []): void
+    public function consume(User $user, int $amount = 1, array $context = []): void
     {
-        Log::info('ImageQuotaService: consume dipanggil', ['user_id' => $user->id, 'amount' => $amount]);
+        Log::info('ImageQuotaService: consume', [
+            'user_id' => $user->id,
+            'amount' => $amount,
+            'remaining_before' => $this->getRemainingQuota($user),
+        ]);
     }
 
     /**
-     * Mengembalikan kuota user (stub).
+     * Mengembalikan kuota user.
+     * Kuota otomatis kembali jika GeneratedImage dihapus atau statusnya bukan 'completed'.
      */
-    public function refund(\App\Models\User $user, int $amount = 1, array $context = []): void
+    public function refund(User $user, int $amount = 1, array $context = []): void
     {
-        Log::info('ImageQuotaService: refund dipanggil', ['user_id' => $user->id, 'amount' => $amount]);
+        Log::info('ImageQuotaService: refund', [
+            'user_id' => $user->id,
+            'amount' => $amount,
+            'remaining_after' => $this->getRemainingQuota($user),
+        ]);
     }
 
     /**
-     * Mendapatkan sisa kuota user (stub).
+     * Mendapatkan sisa kuota user.
+     * Dihitung: total kuota dari order paid - total gambar completed.
      */
-    public function getRemainingQuota(\App\Models\User $user): int
+    public function getRemainingQuota(User $user): int
     {
-        Log::info('ImageQuotaService: getRemainingQuota dipanggil', ['user_id' => $user->id]);
-        return 10;
+        $purchasedQuota = Order::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->sum('image_quota');
+
+        $usedImageQuota = GeneratedImage::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+            
+        $usedChatQuota = \App\Models\ChatMessage::whereHas('chatSession', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->where('role', 'user')->count();
+
+        return max(0, (int) $purchasedQuota - $usedImageQuota - $usedChatQuota);
     }
 }

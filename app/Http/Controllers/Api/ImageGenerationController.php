@@ -73,4 +73,27 @@ class ImageGenerationController extends Controller
             ], $e->getCode() ?: 404);
         }
     }
+
+    public function quota()
+    {
+        try {
+            $user = request()->user();
+            $quotaService = app(\App\Services\Quota\ImageQuotaService::class);
+            $remaining = $quotaService->getRemainingQuota($user);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kuota berhasil diambil.',
+                'data' => [
+                    'remaining' => $remaining,
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors' => null
+            ], 500);
+        }
+    }
 }

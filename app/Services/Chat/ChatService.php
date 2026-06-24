@@ -108,6 +108,11 @@ class ChatService
      */
     public function sendMessage(User $user, int $sessionId, string $message): array
     {
+        $quotaService = app(\App\Services\Quota\ImageQuotaService::class);
+        if (!$quotaService->hasQuota($user)) {
+            throw new \App\Exceptions\BusinessRuleException('Kuota tidak mencukupi untuk memproses pesan ini. Silakan beli kuota tambahan.');
+        }
+
         $session = $user->chatSessions()->findOrFail($sessionId);
 
         // 1. Simpan pesan user

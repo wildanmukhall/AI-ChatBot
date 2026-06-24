@@ -111,6 +111,7 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
         Route::get('/payments/{order}', [\App\Http\Controllers\Api\PaymentController::class, 'show'])->name('payments.show');
 
         // Image Generation
+        Route::get('/images/quota', [\App\Http\Controllers\Api\ImageGenerationController::class, 'quota'])->name('images.quota');
         Route::post('/images/generate', [\App\Http\Controllers\Api\ImageGenerationController::class, 'generate'])->name('images.generate');
         Route::get('/images/{id}/status', [\App\Http\Controllers\Api\ImageGenerationController::class, 'status'])->name('images.status');
 
