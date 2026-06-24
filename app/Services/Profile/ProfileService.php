@@ -21,6 +21,7 @@ class ProfileService
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role ?? 'user',
+            'image_quota' => $user->image_quota,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ];
@@ -105,12 +106,7 @@ class ProfileService
                 ->count();
             $totalUsedQuota  = $completedImages;
 
-            // Remaining quota = sum of paid orders' image_quota – used
-            $purchasedQuota = \App\Models\Order::where('user_id', $user->id)
-                ->where('status', 'paid')
-                ->sum('image_quota');
-
-            $remainingQuota = max(0, (int) $purchasedQuota - $totalUsedQuota);
+            $remainingQuota = $user->image_quota;
         } catch (\Exception $e) {
             // Tables may not exist yet
         }

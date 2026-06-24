@@ -31,3 +31,9 @@ export const getOrderDetail = (orderId) => axiosInstance.get(`/payments/${orderI
  * Riwayat semua order milik user yang login
  */
 export const getOrders = () => axiosInstance.get('/payments');
+
+/**
+ * Sync status order dengan Midtrans (useful for localhost)
+ * @param {number} orderId
+ */
+export const syncOrder = (orderId) => axiosInstance.post(`/payments/${orderId}/sync`);

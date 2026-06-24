@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\CheckoutRequest;
+use App\Models\Order;
 use App\Services\Payment\PaymentService;
 use App\Exceptions\PaymentGatewayException;
 use Illuminate\Http\Request;
@@ -133,6 +134,38 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada sistem.',
+                'errors' => null
+            ], 500);
+        }
+    }
+
+    public function sync(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+            $order = Order::where('user_id', $user->id)->findOrFail($id);
+            
+            $syncedOrder = $this->paymentService->syncOrder($order);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil sinkronisasi status pesanan.',
+                'data' => [
+                    'order' => [
+                        'id' => $syncedOrder->id,
+                        'order_code' => $syncedOrder->order_code,
+                        'status' => $syncedOrder->status,
+                        'amount' => $syncedOrder->amount,
+                        'image_quota' => $syncedOrder->image_quota,
+                        'created_at' => $syncedOrder->created_at,
+                        'paid_at' => $syncedOrder->paid_at,
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal sinkronisasi pesanan.',
                 'errors' => null
             ], 500);
         }

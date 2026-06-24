@@ -91,6 +91,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role ?? 'user',
+                'image_quota' => $user->image_quota,
             ],
             'token' => $token,
         ], 'Login berhasil.');
@@ -120,6 +121,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role ?? 'user',
+            'image_quota' => $user->image_quota,
             'created_at' => $user->created_at->toISOString(),
         ], 'Data user berhasil diambil.');
     }

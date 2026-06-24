@@ -109,6 +109,7 @@ Route::middleware(['throttle:api'])->prefix('v1')->group(function () {
         Route::post('/payments/checkout', [\App\Http\Controllers\Api\PaymentController::class, 'checkout'])->name('payments.checkout');
         Route::get('/payments', [\App\Http\Controllers\Api\PaymentController::class, 'index'])->name('payments.index');
         Route::get('/payments/{order}', [\App\Http\Controllers\Api\PaymentController::class, 'show'])->name('payments.show');
+        Route::post('/payments/{id}/sync', [\App\Http\Controllers\Api\PaymentController::class, 'sync'])->name('payments.sync');
 
         // Image Generation
         Route::get('/images/quota', [\App\Http\Controllers\Api\ImageGenerationController::class, 'quota'])->name('images.quota');
