@@ -104,9 +104,12 @@ class PaymentService
                 $order->status = $internalStatus;
                 if ($internalStatus === 'paid') {
                     $order->paid_at = now();
-                    // Kuota otomatis bertambah karena dihitung secara dinamis:
-                    // remaining = sum(paid orders' image_quota) - count(completed images)
-                    Log::info('Payment successful, quota added', [
+                    
+                    // Increment user's stateful image quota
+                    $user = $order->user;
+                    $user->increment('image_quota', $order->image_quota);
+
+                    Log::info('Payment successful, quota added statefully', [
                         'order_id' => $order->id,
                         'user_id' => $order->user_id,
                         'image_quota' => $order->image_quota,
@@ -157,7 +160,12 @@ class PaymentService
                     $order->status = $internalStatus;
                     if ($internalStatus === 'paid') {
                         $order->paid_at = now();
-                        Log::info('Payment successful (synced manually), quota added', [
+                        
+                        // Increment user's stateful image quota
+                        $user = $order->user;
+                        $user->increment('image_quota', $order->image_quota);
+
+                        Log::info('Payment successful (synced manually), quota added statefully', [
                             'order_id' => $order->id,
                             'user_id' => $order->user_id,
                             'image_quota' => $order->image_quota,

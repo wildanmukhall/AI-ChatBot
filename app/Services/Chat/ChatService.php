@@ -113,6 +113,8 @@ class ChatService
             throw new \App\Exceptions\BusinessRuleException('Kuota tidak mencukupi untuk memproses pesan ini. Silakan beli kuota tambahan.');
         }
 
+        $quotaService->consume($user);
+
         $session = $user->chatSessions()->findOrFail($sessionId);
 
         // 1. Simpan pesan user

@@ -31,49 +31,39 @@ class ImageQuotaService
 
     /**
      * Mengurangi kuota user.
-     * Kuota berkurang secara otomatis karena dihitung dari jumlah GeneratedImage.
-     * Method ini hanya untuk logging.
      */
     public function consume(User $user, int $amount = 1, array $context = []): void
     {
+        $user->decrement('image_quota', $amount);
+
         Log::info('ImageQuotaService: consume', [
             'user_id' => $user->id,
             'amount' => $amount,
-            'remaining_before' => $this->getRemainingQuota($user),
+            'remaining_before' => $user->image_quota + $amount,
+            'remaining_after' => $user->image_quota,
         ]);
     }
 
     /**
      * Mengembalikan kuota user.
-     * Kuota otomatis kembali jika GeneratedImage dihapus atau statusnya bukan 'completed'.
      */
     public function refund(User $user, int $amount = 1, array $context = []): void
     {
+        $user->increment('image_quota', $amount);
+
         Log::info('ImageQuotaService: refund', [
             'user_id' => $user->id,
             'amount' => $amount,
-            'remaining_after' => $this->getRemainingQuota($user),
+            'remaining_before' => $user->image_quota - $amount,
+            'remaining_after' => $user->image_quota,
         ]);
     }
 
     /**
      * Mendapatkan sisa kuota user.
-     * Dihitung: total kuota dari order paid - total gambar completed.
      */
     public function getRemainingQuota(User $user): int
     {
-        $purchasedQuota = Order::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->sum('image_quota');
-
-        $usedImageQuota = GeneratedImage::where('user_id', $user->id)
-            ->where('status', 'completed')
-            ->count();
-            
-        $usedChatQuota = \App\Models\ChatMessage::whereHas('chatSession', function($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->where('role', 'user')->count();
-
-        return max(0, (int) $purchasedQuota - $usedImageQuota - $usedChatQuota);
+        return $user->image_quota;
     }
 }
