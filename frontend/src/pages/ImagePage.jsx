@@ -53,22 +53,53 @@ export default function ImagePage() {
         if (!prompt.trim() || isGenerating) return;
 
         setIsGenerating(true);
-        // TODO: integrate with actual image generation API
-        await new Promise((r) => setTimeout(r, 2500));
+        try {
+            // Import the api functions inline or add to top
+            const { generateImage, getImageStatus } = await import('../api/imageApi');
+            
+            const reqData = {
+                prompt,
+                // Negative prompt is currently not supported by Cloudflare SDXL Lightning, but we send it if we have it
+            };
+            
+            const response = await generateImage(reqData);
+            const imageId = response.data.id;
+            
+            // Start polling
+            let isCompleted = false;
+            let finalImageUrl = null;
+            
+            while (!isCompleted) {
+                await new Promise(r => setTimeout(r, 3000));
+                const statusRes = await getImageStatus(imageId);
+                if (statusRes.data.status === 'completed') {
+                    isCompleted = true;
+                    finalImageUrl = statusRes.data.image_url;
+                } else if (statusRes.data.status === 'failed') {
+                    isCompleted = true;
+                    alert("Generation failed: " + statusRes.data.error_message);
+                    setIsGenerating(false);
+                    return;
+                }
+            }
 
-        // Placeholder: gunakan picsum untuk demo
-        const ratio = ASPECT_RATIOS.find((r) => r.id === selectedRatio);
-        const newImages = Array.from({ length: 4 }, (_, i) => ({
-            id: Date.now() + i,
-            url: `https://picsum.photos/seed/${Date.now() + i}/${ratio.w}/${ratio.h}`,
-            prompt,
-            style: selectedStyle,
-            ratio: selectedRatio,
-        }));
+            const ratio = ASPECT_RATIOS.find((r) => r.id === selectedRatio);
+            const newImage = {
+                id: imageId,
+                url: finalImageUrl,
+                prompt,
+                style: selectedStyle,
+                ratio: selectedRatio,
+            };
 
-        setGeneratedImages((prev) => [...newImages, ...prev]);
-        setActiveImage(newImages[0]);
-        setIsGenerating(false);
+            setGeneratedImages((prev) => [newImage, ...prev]);
+            setActiveImage(newImage);
+            setIsGenerating(false);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || "Failed to generate image.");
+            setIsGenerating(false);
+        }
     };
 
     const handleCopyPrompt = () => {

@@ -28,9 +28,12 @@ class ImageGenerationController extends Controller
                 'data' => [
                     'id' => $image->id,
                     'prompt' => $image->prompt,
+                    'negative_prompt' => $image->negative_prompt,
                     'status' => $image->status,
                     'provider' => $image->provider,
-                    'model' => $image->model,
+                    'width' => $image->width,
+                    'height' => $image->height,
+                    'image_url' => $image->image_url,
                     'created_at' => $image->created_at,
                 ]
             ]);

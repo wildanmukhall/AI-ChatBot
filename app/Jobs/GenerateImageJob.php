@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\GeneratedImage;
-use App\Services\AI\CloudflareImageService;
+use App\Services\AI\CloudflareWorkerImageService;
 use App\Services\Image\ImageGenerationService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -31,12 +31,13 @@ class GenerateImageJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(CloudflareImageService $cloudflareService, ImageGenerationService $generationService): void
+    public function handle(CloudflareWorkerImageService $cloudflareService, ImageGenerationService $generationService): void
     {
         try {
             $this->image->update(['started_at' => now()]);
 
-            $binaryImage = $cloudflareService->generateImage($this->image->prompt, [
+            $binaryImage = $cloudflareService->generate($this->image->prompt, [
+                'negative_prompt' => $this->image->negative_prompt,
                 'width' => $this->image->width,
                 'height' => $this->image->height,
             ]);

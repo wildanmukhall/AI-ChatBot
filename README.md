@@ -1232,18 +1232,176 @@ Sistem ini memiliki fitur Text-to-Image menggunakan Cloudflare Workers AI. Prose
      }
      ```
 
-### Testing Cloudflare AI Text-to-Image
+### Testing Cloudflare Worker Text-to-Image
 
 1. Pastikan queue worker berjalan: `php artisan queue:work`
 2. Pastikan storage link telah terbuat: `php artisan storage:link`
-3. Pastikan konfigurasi env terisi:
+3. Pastikan konfigurasi env terisi sesuai Worker Anda:
    ```env
-   CLOUDFLARE_AI_ACCOUNT_ID="your-account-id"
-   CLOUDFLARE_AI_API_TOKEN="your-api-token"
-   CLOUDFLARE_AI_IMAGE_MODEL="@cf/bytedance/stable-diffusion-xl-lightning"
+   CLOUDFLARE_IMAGE_WORKER_URL="https://dark-mouse-667e.dandysultana3.workers.dev/generate"
+   CLOUDFLARE_IMAGE_WORKER_TIMEOUT=120
+   CLOUDFLARE_IMAGE_WORKER_RETRY_TIMES=1
    ```
 4. Panggil endpoint request generate, catat `id` yang didapat.
 5. Panggil endpoint status check dengan interval tertentu hingga status berubah menjadi `completed` atau `failed`.
+
+### Panduan Integrasi Frontend (React) - Image Generation
+
+Berikut adalah contoh implementasi Service dan Component React untuk fitur Text-to-Image yang terhubung dengan backend Laravel Anda. Backend menggunakan sistem _Queue_ dan _Polling_ untuk mencegah *timeout*.
+
+**Catatan Penting untuk Frontend:**
+- Pastikan instance Axios Anda (misalnya `api.js` atau `axiosInstance.js`) sudah memiliki `baseURL: 'http://localhost:8000/api/v1'`.
+- Jangan menambahkan `/api/v1` lagi di path request Anda agar tidak terjadi duplikasi (Error 404 Endpoint tidak ditemukan).
+
+**1. Service API (`src/services/imageService.js` atau `src/api/imageApi.js`)**
+
+```javascript
+import api from '../lib/api'; // Sesuaikan dengan file axios instance Anda
+
+// Request generate gambar (mengembalikan status 'processing' dan ID task)
+export const generateImage = async (payload) => {
+  // Hanya gunakan /images/generate karena baseURL sudah ada
+  const res = await api.post('/images/generate', payload);
+  return res.data;
+};
+
+// Cek status gambar menggunakan ID dari generateImage
+export const getImageStatus = async (id) => {
+  const res = await api.get(`/images/${id}/status`);
+  return res.data;
+};
+```
+
+**2. Hook React (Opsional - `src/hooks/useImageGeneration.js`)**
+
+```javascript
+import { useState, useRef, useEffect } from 'react';
+import { generateImage, getImageStatus } from '../services/imageService';
+
+export function useImageGeneration() {
+  const [status, setStatus] = useState('idle'); // idle, submitting, processing, completed, failed
+  const [imageUrl, setImageUrl] = useState(null);
+  const [error, setError] = useState(null);
+  const pollIntervalRef = useRef(null);
+
+  const startGeneration = async (prompt, negative_prompt = '', width = 512, height = 512) => {
+    setStatus('submitting');
+    setError(null);
+    setImageUrl(null);
+
+    try {
+      const response = await generateImage({ prompt, negative_prompt, width, height });
+      if (response.success && response.data.id) {
+        setStatus('processing');
+        startPolling(response.data.id);
+      }
+    } catch (err) {
+      setStatus('failed');
+      setError(err.response?.data?.message || 'Gagal memulai proses generate gambar.');
+    }
+  };
+
+  const startPolling = (id) => {
+    // Polling setiap 3 detik
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const response = await getImageStatus(id);
+        const currentStatus = response.data.status;
+
+        if (currentStatus === 'completed') {
+          setStatus('completed');
+          setImageUrl(response.data.image_url);
+          clearInterval(pollIntervalRef.current);
+        } else if (currentStatus === 'failed') {
+          setStatus('failed');
+          setError(response.data.error_message || 'Proses generate gambar gagal.');
+          clearInterval(pollIntervalRef.current);
+        }
+      } catch (err) {
+        // Abaikan error jaringan sementara, atau tangani jika berulang kali
+        console.error('Error saat polling:', err);
+      }
+    }, 3000);
+  };
+
+  useEffect(() => {
+    // Cleanup interval saat komponen di-unmount
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, []);
+
+  return { status, imageUrl, error, startGeneration };
+}
+```
+
+### 🛑 Troubleshooting Error Umum
+
+1. **Gambar Muncul sebagai Kumpulan Baut / Onderdil Mesin (Typewriter Parts):**
+   - **Penyebab:** Cloudflare Model `@cf/bytedance/stable-diffusion-xl-lightning` **tidak mendukung** parameter `negative_prompt`, `width`, dan `height`. Jika parameter ini terkirim ke Cloudflare, model akan error dan mengembalikan gambar *noise/placeholder model*.
+   - **Solusi:** Di backend, `CloudflareWorkerImageService.php` sudah disetel untuk HANYA mengirimkan parameter `prompt` saja. 
+
+2. **Error `cURL error 28: Resolving timed out` di Terminal Queue:**
+   - **Penyebab:** DNS komputer lokal Anda lambat dalam memetakan domain `workers.dev` milik Cloudflare.
+   - **Solusi:** Sudah ditambahkan `->connectTimeout(30)` di backend. Pastikan Anda merestart terminal queue dengan cara `Ctrl+C` lalu menjalankan ulang `php artisan queue:work`.
+
+3. **Gambar Tidak Pernah Selesai (Processing Terus):**
+   - **Penyebab:** Anda lupa menyalakan Queue Worker Laravel.
+   - **Solusi:** Buka terminal baru, pastikan Anda masuk ke folder project, lalu jalankan `php artisan queue:work`. Worker ini wajib menyala agar gambar bisa ditarik dari Cloudflare secara background.
+
+**3. Contoh Komponen UI (`src/pages/GenerateImagePage.jsx`)**
+
+```jsx
+import { useState } from 'react';
+import { useImageGeneration } from '../hooks/useImageGeneration';
+
+export default function GenerateImagePage() {
+  const [prompt, setPrompt] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
+  const { status, imageUrl, error, startGeneration } = useImageGeneration();
+
+  const handleGenerate = (e) => {
+    e.preventDefault();
+    if (!prompt.trim()) return;
+    startGeneration(prompt, negativePrompt);
+  };
+
+  return (
+    <div>
+      <h2>Generate Gambar dengan AI</h2>
+      <form onSubmit={handleGenerate}>
+        <textarea
+          placeholder="Masukkan prompt... (contoh: A futuristic city)"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Negative prompt... (contoh: blurry)"
+          value={negativePrompt}
+          onChange={(e) => setNegativePrompt(e.target.value)}
+        />
+        <button type="submit" disabled={status === 'submitting' || status === 'processing'}>
+          {status === 'submitting' || status === 'processing' ? 'Memproses...' : 'Generate Gambar'}
+        </button>
+      </form>
+
+      {/* Menampilkan Status / Hasil */}
+      <div style={{ marginTop: '20px' }}>
+        {status === 'processing' && <p>AI sedang menggambar, mohon tunggu... ⏳</p>}
+        {status === 'failed' && <p style={{ color: 'red' }}>Error: {error}</p>}
+        {status === 'completed' && imageUrl && (
+          <div>
+            <p>✅ Selesai!</p>
+            <img src={imageUrl} alt="Generated AI" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+```
 
 ---
 

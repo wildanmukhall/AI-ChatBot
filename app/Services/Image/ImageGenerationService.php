@@ -29,10 +29,10 @@ class ImageGenerationService
             'user_id' => $user->id,
             'prompt' => $data['prompt'],
             'negative_prompt' => $data['negative_prompt'] ?? null,
-            'width' => $data['width'] ?? 1024,
-            'height' => $data['height'] ?? 1024,
-            'provider' => 'cloudflare',
-            'model' => config('services.cloudflare_ai.image_model', '@cf/bytedance/stable-diffusion-xl-lightning'),
+            'width' => $data['width'] ?? 512,
+            'height' => $data['height'] ?? 512,
+            'provider' => 'cloudflare_worker',
+            'model' => '@cf/bytedance/stable-diffusion-xl-lightning',
             'status' => 'processing',
         ]);
 
