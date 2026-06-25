@@ -177,7 +177,7 @@ DB_PASSWORD=
 ### Gemini API (WAJIB)
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=AQ.Ab8RN6KazEOP_Fyp1fqhvXCr0XFQ2sVi8-v9tIU2hOOOvMLqsA
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 GEMINI_MODEL=gemini-1.5-flash
 GEMINI_TIMEOUT=30
